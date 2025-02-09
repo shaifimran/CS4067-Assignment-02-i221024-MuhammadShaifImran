@@ -20,7 +20,7 @@ jobs:
         if: env.JIRA_KEY != ''
         run: |
           RESPONSE=$(curl -s -u "${{ secrets.JIRA_USER }}:${{ secrets.JIRA_API_TOKEN }}" \
-            -X GET "https://your-jira-instance.atlassian.net/rest/api/3/issue/${{ env.JIRA_KEY }}" \
+            -X GET "https://shaifimran.atlassian.net/rest/api/3/issue/${{ env.JIRA_KEY }}" \
             -H "Accept: application/json")
 
           SUMMARY=$(echo "$RESPONSE" | jq -r '.fields.summary')
