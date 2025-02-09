@@ -31,7 +31,8 @@ jobs:
           cat jira_child_issues.json | jq -c '.issues[]' | while read -r issue; do
             CHILD_KEY=$(echo "$issue" | jq -r '.key')
             SUMMARY=$(echo "$issue" | jq -r '.fields.summary')
-            DESCRIPTION=$(echo "$issue" | jq -r '.fields.description.content[0].content[0].text')
+            DESCRIPTION=$(echo "$RESPONSE" | jq -r '.fields.description.content | map(.content | map(.text) | join(" ")) | join("\n")'
+
             PRIORITY=$(echo "$issue" | jq -r '.fields.priority.name')
             STATUS=$(echo "$issue" | jq -r '.fields.status.name')
             ISSUE_TYPE=$(echo "$issue" | jq -r '.fields.issuetype.name')
