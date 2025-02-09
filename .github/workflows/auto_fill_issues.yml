@@ -32,7 +32,8 @@ jobs:
       - name: Update GitHub Issue Description
         if: env.JIRA_KEY != ''
         run: |
-          curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            DESCRIPTION_JSON=$(echo "${{ env.DESCRIPTION }}" | jq -Rsa .)
+            curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
-            -d "{\"body\": \"### Jira Issue: [${{ env.JIRA_KEY }}](https://shaifimran.atlassian.net/browse/${{ env.JIRA_KEY }})\n\n**Summary:** ${{ env.SUMMARY }}\n\n**Description:** ${{ env.DESCRIPTION }}\"}"
+            -d "{\"body\": \"### Jira Issue: [${{ env.JIRA_KEY }}](https://shaifimran.atlassian.net/browse/${{ env.JIRA_KEY }})\n\n**Summary:** ${{ env.SUMMARY }}\n\n**Description:** ${DESCRIPTION_JSON}\"}"
