@@ -23,8 +23,8 @@ jobs:
             -X GET "https://shaifimran.atlassian.net/rest/api/3/issue/${{ env.JIRA_KEY }}" \
             -H "Accept: application/json")
 
-          SUMMARY=$(echo "$RESPONSE" | jq -r '.fields.summary')
-          DESCRIPTION=$(echo "$RESPONSE" | jq -r '.fields.description.content[0].content[0].text')
+            SUMMARY=$(echo "$RESPONSE" | jq -r '.fields.summary')
+            DESCRIPTION=$(echo "$RESPONSE" | jq -r '.fields.description.content | map(.content | map(.text) | join(" ")) | join("\n")')
 
           echo "SUMMARY=$SUMMARY" >> $GITHUB_ENV
           echo "DESCRIPTION=$DESCRIPTION" >> $GITHUB_ENV
