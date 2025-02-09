@@ -1,0 +1,38 @@
+name: Auto-Fill GitHub Issues from Jira
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  fetch-jira-details:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Jira Issue Key
+        id: extract_key
+        run: |
+          TITLE="${{ github.event.issue.title }}"
+          JIRA_KEY=$(echo "$TITLE" | grep -oE '[A-Z]+-[0-9]+')
+          echo "JIRA_KEY=$JIRA_KEY" >> $GITHUB_ENV
+
+      - name: Fetch Jira Issue Details
+        id: fetch_jira
+        if: env.JIRA_KEY != ''
+        run: |
+          RESPONSE=$(curl -s -u "${{ secrets.JIRA_USER }}:${{ secrets.JIRA_API_TOKEN }}" \
+            -X GET "https://your-jira-instance.atlassian.net/rest/api/3/issue/${{ env.JIRA_KEY }}" \
+            -H "Accept: application/json")
+
+          SUMMARY=$(echo "$RESPONSE" | jq -r '.fields.summary')
+          DESCRIPTION=$(echo "$RESPONSE" | jq -r '.fields.description.content[0].content[0].text')
+
+          echo "SUMMARY=$SUMMARY" >> $GITHUB_ENV
+          echo "DESCRIPTION=$DESCRIPTION" >> $GITHUB_ENV
+
+      - name: Update GitHub Issue Description
+        if: env.JIRA_KEY != ''
+        run: |
+          curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
+            -d "{\"body\": \"### Jira Issue: [${{ env.JIRA_KEY }}](https://your-jira-instance.atlassian.net/browse/${{ env.JIRA_KEY }})\n\n**Summary:** ${{ env.SUMMARY }}\n\n**Description:** ${{ env.DESCRIPTION }}\"}"
