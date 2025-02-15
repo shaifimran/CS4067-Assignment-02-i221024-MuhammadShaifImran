@@ -24,10 +24,9 @@ jobs:
             -H "Accept: application/json" \
             "$JIRA_BASE_URL/rest/api/3/issue/$JIRA_ISSUE_KEY")
 
-          echo "$RESPONSE" | jq '.fields | {summary, description}' > jira_issue.json
+          echo "$RESPONSE" | jq '.fields | {summary}' > jira_issue.json
 
           SUMMARY=$(jq -r '.summary' jira_issue.json)
-          DESCRIPTION=$(jq -r '.description' jira_issue.json)
 
           echo "SUMMARY=$SUMMARY" >> $GITHUB_ENV
 
@@ -42,7 +41,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issue_number,
-              title: title,
+              title: title
             });
 
       - name: Fetch and Create Child Issues Recursively
