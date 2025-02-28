@@ -14,7 +14,7 @@ env:
   # Set these in your repository secrets
   JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
   JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
-  JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+  JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
 jobs:
   create-child-issues:
