@@ -25,5 +25,5 @@ jobs:
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_PROJECT_NAME: "CS4067-Assgt-EventBooking-i221024-MuhammadShaifImran"
+          GITHUB_PROJECT_ID: "3"  # Replace with actual GitHub Project ID
         run: python .github/scripts/sync_jira_issues.py
