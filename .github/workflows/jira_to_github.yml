@@ -84,7 +84,7 @@ jobs:
               const jiraBaseUrl = process.env.JIRA_BASE_URL;
               const jiraUsername = process.env.JIRA_USERNAME;
               const jiraToken = process.env.JIRA_TOKEN;
-              const jiraSearchUrl = `${jiraBaseUrl}/rest/api/2/search?jql=${jql}&fields=summary,key`;
+              const jiraSearchUrl = `${jiraBaseUrl}/rest/api/latest/search?jql=${jql}&fields=summary,key`;
               
               // Prepare Basic Auth header for Jira
               const auth = Buffer.from(`${jiraUsername}:${jiraToken}`).toString('base64');
