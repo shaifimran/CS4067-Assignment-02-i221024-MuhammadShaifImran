@@ -11,7 +11,7 @@ permissions:
 
 env:
   JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-  JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+  JIRA_USERNAME: ${{ secrets.JIRA_EMAIL }}
   JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
   GITHUB_PROJECT_COLUMN_ID: ${{ secrets.PROJECT_COLUMN_ID }}
 
