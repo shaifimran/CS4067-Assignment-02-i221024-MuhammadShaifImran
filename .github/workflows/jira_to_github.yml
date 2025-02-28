@@ -28,6 +28,6 @@ jobs:
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
-          GITHUB_PROJECT_ID: 3
+          GITHUB_PROJECT_ID: '3'  # Ensure this matches your actual project ID
         run: |
-          python sync_jira_issues.py
+          python .github/scripts/sync_jira_issues.py
