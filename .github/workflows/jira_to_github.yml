@@ -12,24 +12,24 @@ permissions:
 env:
   JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
   JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
-  JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-  GITHUB_PROJECT_COLUMN_ID: ${{ secrets.PROJECT_COLUMN_ID }}
+  JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+  GITHUB_PROJECT_COLUMN_ID: ${{ secrets.GITHUB_PROJECT_COLUMN_ID }}
 
 jobs:
   create-child-issues:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repository
+      - name: Check out repository
         uses: actions/checkout@v3
 
       - name: Process JIRA Child Issues Recursively
         uses: actions/github-script@v6
         with:
           script: |
-            const axios = require('axios');
+            const https = require('https');
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-
+            
             // For issues: opened event, the payload has an "issue" field.
             const parentIssue = context.payload.issue;
             if (!parentIssue) {
@@ -38,7 +38,7 @@ jobs:
             }
             const issueNumber = parentIssue.number;
             const parentContent = (parentIssue.title || "") + "\n" + (parentIssue.body || "");
-
+            
             // Attempt to extract the JIRA key from a URL
             // Example URL: https://shaifimran.atlassian.net/jira/software/projects/CS4067/boards/3?selectedIssue=CS4067-3
             const jiraUrlRegex = /https:\/\/shaifimran\.atlassian\.net\/jira\/software\/projects\/CS4067\/boards\/\d+\?selectedIssue=([A-Z]+-\d+)/;
@@ -56,40 +56,61 @@ jobs:
                 console.log(`Extracted JIRA key from content: ${jiraParentKey}`);
               }
             }
-
+            
             if (!jiraParentKey) {
               console.log("No JIRA key found in the parent issue. Exiting.");
               return;
             }
-
+            
             // Get the GitHub project column id from the environment
             const columnId = process.env.GITHUB_PROJECT_COLUMN_ID;
             if (!columnId) {
               console.log("No GitHub project column id provided (GITHUB_PROJECT_COLUMN_ID). Exiting.");
               return;
             }
-
-            // Define recursive function to process child issues
+            
+            // Helper function to perform GET requests and return JSON
+            function getJson(url, headers) {
+              return new Promise((resolve, reject) => {
+                const options = { headers: headers };
+                https.get(url, options, (res) => {
+                  let data = '';
+                  res.on('data', chunk => data += chunk);
+                  res.on('end', () => {
+                    try {
+                      const json = JSON.parse(data);
+                      resolve(json);
+                    } catch (err) {
+                      reject(err);
+                    }
+                  });
+                }).on('error', err => reject(err));
+              });
+            }
+            
+            // Recursive function to process child issues from JIRA
             async function processChildIssues(jiraKey, githubParentIssueNumber, columnId) {
-              // Build a JQL query to fetch child issues of the given JIRA key
               const jql = encodeURIComponent(`parent = "${jiraKey}" OR "Epic Link" = "${jiraKey}"`);
               const jiraBaseUrl = process.env.JIRA_BASE_URL;
               const jiraUsername = process.env.JIRA_USERNAME;
-              const jiraToken    = process.env.JIRA_TOKEN;
+              const jiraToken = process.env.JIRA_TOKEN;
               const jiraSearchUrl = `${jiraBaseUrl}/rest/api/2/search?jql=${jql}&fields=summary`;
-              let childIssues = [];
+              
+              // Prepare basic auth header for JIRA
+              const auth = Buffer.from(`${jiraUsername}:${jiraToken}`).toString('base64');
+              const headers = {
+                "Authorization": `Basic ${auth}`,
+                "Accept": "application/json"
+              };
+              
+              let jiraResponse;
               try {
-                const response = await axios.get(jiraSearchUrl, {
-                  auth: {
-                    username: jiraUsername,
-                    password: jiraToken
-                  }
-                });
-                childIssues = response.data.issues || [];
+                jiraResponse = await getJson(jiraSearchUrl, headers);
               } catch (error) {
                 console.error(`Error fetching child issues for ${jiraKey}:`, error.message);
                 return;
               }
+              const childIssues = jiraResponse.issues || [];
               if (childIssues.length === 0) {
                 console.log(`No child issues found for JIRA issue ${jiraKey}.`);
                 return;
@@ -98,9 +119,10 @@ jobs:
                 const childKey = child.key;  // e.g., "CS4067-4"
                 const childSummary = child.fields.summary || "(No summary)";
                 const childTitle = `[${childKey}] ${childSummary}`;
-                const childBody  = `Auto-created from JIRA issue **${childKey}**.\n` +
-                                   `**Parent GitHub Issue**: #${githubParentIssueNumber}\n` +
-                                   `**Parent JIRA Issue**: ${jiraKey}`;
+                const childBody = `Auto-created from JIRA issue **${childKey}**.\n` +
+                                  `**Parent GitHub Issue**: #${githubParentIssueNumber}\n` +
+                                  `**Parent JIRA Issue**: ${jiraKey}`;
+                
                 // Create a new GitHub issue for the child issue
                 const { data: newIssue } = await github.rest.issues.create({
                   owner,
@@ -109,6 +131,7 @@ jobs:
                   body: childBody
                 });
                 console.log(`Created GitHub issue #${newIssue.number} for JIRA issue ${childKey}.`);
+                
                 // Add the new GitHub issue as a project card in the specified column
                 await github.rest.projects.createCard({
                   column_id: parseInt(columnId, 10),
@@ -116,11 +139,12 @@ jobs:
                   content_type: "Issue"
                 });
                 console.log(`Added issue #${newIssue.number} to project column ${columnId}.`);
+                
                 // Recursively process further child issues of this child
                 await processChildIssues(childKey, newIssue.number, columnId);
               }
             }
-
-            // Start processing recursively from the parent JIRA key
+            
+            // Start the recursive process from the parent JIRA key
             await processChildIssues(jiraParentKey, issueNumber, columnId);
             console.log("Recursive child issue creation completed.");
