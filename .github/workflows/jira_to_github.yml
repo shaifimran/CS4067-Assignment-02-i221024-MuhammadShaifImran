@@ -80,7 +80,7 @@ jobs:
             async function processJiraChildIssues(jiraKey, parentGitHubIssueNumber) {
               // Build a JQL query to fetch child issues for the given Jira key.
               // This query fetches any issue whose "parent" or "Epic Link" equals the key.
-              const jql = encodeURIComponent(`parent = "${jiraKey}" OR "Epic Link" = "${jiraKey}"`);
+              const jql = encodeURIComponent(`parent = "${jiraKey}"`);
               const jiraBaseUrl = process.env.JIRA_BASE_URL;
               const jiraUsername = process.env.JIRA_USERNAME;
               const jiraToken = process.env.JIRA_TOKEN;
