@@ -1,9 +1,8 @@
 name: Auto-Create Recursive Child Issues from JIRA
 
 on:
-  # Trigger when a card is created in a classic GitHub Project
-  project_card:
-    types: [created]
+  issues:
+    types: [opened]
 
 permissions:
   contents: write    # For reading/writing files if needed
