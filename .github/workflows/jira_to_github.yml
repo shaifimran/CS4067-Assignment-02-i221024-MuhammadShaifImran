@@ -1,4 +1,4 @@
-name: Auto-Create Child Issues from Parent Issue
+name: Auto-Create Recursive Child Issues from Jira
 
 on:
   issues:
@@ -10,6 +10,9 @@ permissions:
   repository-projects: write  # To create project cards
 
 env:
+  JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+  JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+  JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
   GITHUB_PROJECT_COLUMN_ID: ${{ secrets.GITHUB_PROJECT_COLUMN_ID }}
 
 jobs:
@@ -19,12 +22,15 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Process Child Issues from Parent Issue
+      - name: Process Jira Child Issues Recursively
         uses: actions/github-script@v6
         with:
           script: |
+            const https = require('https');
             const owner = context.repo.owner;
             const repo = context.repo.repo;
+            
+            // For issues: opened event, payload has "issue"
             const parentIssue = context.payload.issue;
             if (!parentIssue) {
               console.log("No parent issue found in payload. Exiting.");
@@ -32,37 +38,17 @@ jobs:
             }
             const issueNumber = parentIssue.number;
             const parentTitle = parentIssue.title || "";
-            const parentBody = parentIssue.body || "";
             
-            // Extract the project key from the title, e.g. "[CS4067-1]"
+            // Extract the Jira key from the title (e.g. "[CS4067-1]")
             const keyRegex = /\[?([A-Z]+-\d+)\]?/;
-            let parentKey = null;
+            let jiraParentKey = null;
             const keyMatch = parentTitle.match(keyRegex);
             if (keyMatch && keyMatch[1]) {
-              parentKey = keyMatch[1];
-              console.log(`Extracted project key from title: ${parentKey}`);
+              jiraParentKey = keyMatch[1];
+              console.log(`Extracted Jira parent key from title: ${jiraParentKey}`);
             } else {
-              console.log("No project key found in title. Exiting.");
+              console.log("No Jira key found in the parent issue title. Exiting.");
               return;
-            }
-            
-            // Parse child tasks from the parent issue body:
-            // Each line starting with "- [ ]" is considered a child task.
-            const lines = parentBody.split("\n");
-            const childTasks = lines
-              .filter(line => line.trim().startsWith("- [ ]"))
-              .map(line => line.replace("- [ ]", "").trim())
-              .filter(task => task.length > 0);
-            if (childTasks.length === 0) {
-              console.log("No child tasks found in parent issue body. Exiting.");
-              return;
-            }
-            
-            // Extract the prefix and number from the parent key (e.g. "CS4067-1")
-            const [keyPrefix, numberPart] = parentKey.split("-");
-            let currentNumber = parseInt(numberPart);
-            if (isNaN(currentNumber)) {
-              currentNumber = 1;
             }
             
             // Get the GitHub project column id from the environment
@@ -72,38 +58,84 @@ jobs:
               return;
             }
             
-            // Function to create child issues sequentially
-            async function createChildIssues(tasks, startNumber, parentIssueNumber) {
-              let newNumber = startNumber;
-              for (const task of tasks) {
-                newNumber++;
-                const newKey = `${keyPrefix}-${newNumber}`;
-                const newTitle = `[${newKey}] ${task}`;
-                const newBody = `Auto-created from parent issue #${parentIssueNumber}.\n` +
-                                `Parent key: ${parentKey}`;
+            // Helper function: perform GET request using Node's https module
+            function getJson(url, headers) {
+              return new Promise((resolve, reject) => {
+                const options = { headers: headers };
+                https.get(url, options, (res) => {
+                  let data = '';
+                  res.on('data', chunk => data += chunk);
+                  res.on('end', () => {
+                    try {
+                      resolve(JSON.parse(data));
+                    } catch (err) {
+                      reject(err);
+                    }
+                  });
+                }).on('error', err => reject(err));
+              });
+            }
+            
+            // Recursive function: fetch child issues from Jira and create corresponding GitHub issues
+            async function processJiraChildIssues(jiraKey, parentGitHubIssueNumber) {
+              // Build a JQL query to fetch child issues for the given Jira key.
+              // This query fetches any issue whose "parent" or "Epic Link" equals the key.
+              const jql = encodeURIComponent(`parent = "${jiraKey}" OR "Epic Link" = "${jiraKey}"`);
+              const jiraBaseUrl = process.env.JIRA_BASE_URL;
+              const jiraUsername = process.env.JIRA_USERNAME;
+              const jiraToken = process.env.JIRA_TOKEN;
+              const jiraSearchUrl = `${jiraBaseUrl}/rest/api/2/search?jql=${jql}&fields=summary,key`;
+              
+              // Prepare Basic Auth header for Jira
+              const auth = Buffer.from(`${jiraUsername}:${jiraToken}`).toString('base64');
+              const headers = {
+                "Authorization": `Basic ${auth}`,
+                "Accept": "application/json"
+              };
+              
+              let searchResult;
+              try {
+                searchResult = await getJson(jiraSearchUrl, headers);
+              } catch (error) {
+                console.error(`Error fetching Jira child issues for ${jiraKey}:`, error.message);
+                return;
+              }
+              
+              const childIssues = searchResult.issues || [];
+              if (childIssues.length === 0) {
+                console.log(`No Jira child issues found for ${jiraKey}.`);
+                return;
+              }
+              
+              for (const child of childIssues) {
+                const childKey = child.key; // e.g., "CS4067-2"
+                const childSummary = child.fields.summary || "(No summary)";
+                const newTitle = `[${childKey}] ${childSummary}`;
+                const newBody = `Auto-created from Jira issue **${childKey}** (parent: ${jiraKey}).\n` +
+                                `Parent GitHub Issue: #${parentGitHubIssueNumber}`;
                 
-                // Create the new GitHub issue
+                // Create a GitHub issue for the Jira child issue
                 const { data: newIssue } = await github.rest.issues.create({
                   owner,
                   repo,
                   title: newTitle,
                   body: newBody
                 });
-                console.log(`Created GitHub issue #${newIssue.number} with key ${newKey}.`);
+                console.log(`Created GitHub issue #${newIssue.number} for Jira issue ${childKey}.`);
                 
-                // Add the new issue as a project card in the specified column
+                // Add the new issue as a card in the specified project column
                 await github.rest.projects.createCard({
                   column_id: parseInt(columnId, 10),
                   content_id: newIssue.id,
                   content_type: "Issue"
                 });
-                console.log(`Added issue #${newIssue.number} to project column ${columnId}.`);
+                console.log(`Added GitHub issue #${newIssue.number} to project column ${columnId}.`);
                 
-                // (Optional) Recursion: Check if the newly created issue body contains further tasks and process them.
+                // Recursively process further child issues from Jira using the child's key
+                await processJiraChildIssues(childKey, newIssue.number);
               }
-              return newNumber;
             }
             
-            // Create child issues using the tasks from the parent issue
-            await createChildIssues(childTasks, currentNumber, issueNumber);
-            console.log("Child issues creation from parent issue completed.");
+            // Start processing recursively from the parent's Jira key
+            await processJiraChildIssues(jiraParentKey, issueNumber);
+            console.log("Recursive Jira child issue creation completed.");
