@@ -1,91 +1,141 @@
-name: Sync Jira Issues to GitHub (Recursive)
+name: Auto-Create Recursive Child Issues from JIRA
 
 on:
-  issues:
-    types: [opened]  # Runs when a new GitHub issue is created
+  # Trigger when a card is created in a classic GitHub Project
+  project_card:
+    types: [created]
+
+permissions:
+  contents: write    # For reading/writing files if needed
+  issues: write      # To create GitHub issues
+  projects: write    # To create project cards
+
+env:
+  # Set these in your repository secrets
+  JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+  JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
+  JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
 
 jobs:
-  sync-jira-issues:
+  create-child-issues:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Check out the repository
+        uses: actions/checkout@v3
 
-      - name: Fetch Jira Issue Details
-        id: fetch_jira
-        run: |
-          JIRA_BASE_URL="https://shaifimran.atlassian.net"
-          JIRA_ISSUE_KEY="${{ github.event.issue.title }}"  # Assuming GitHub issue title is the Jira issue key
-          JIRA_AUTH=$(echo -n "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}" | base64)
-
-          RESPONSE=$(curl -s -X GET \
-            -H "Authorization: Basic $JIRA_AUTH" \
-            -H "Accept: application/json" \
-            "$JIRA_BASE_URL/rest/api/3/issue/$JIRA_ISSUE_KEY")
-
-          echo "$RESPONSE" | jq '.fields | {summary}' > jira_issue.json
-
-          SUMMARY=$(jq -r '.summary' jira_issue.json)
-
-          echo "SUMMARY=$SUMMARY" >> $GITHUB_ENV
-
-      - name: Update GitHub Issue with Jira Details
-        uses: actions/github-script@v7
+      - name: Process JIRA Child Issues Recursively
+        uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const issue_number = context.issue.number;
-            const title = process.env.SUMMARY;
-            github.rest.issues.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue_number,
-              title: title
+            const axios = require('axios');
+
+            const { project_card } = context.payload;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Ensure the card references an issue (not a PR or a note)
+            if (!project_card.content_url || !project_card.content_url.includes('/issues/')) {
+              console.log("Project card does not reference a valid issue. Exiting.");
+              return;
+            }
+
+            // Extract the parent GitHub issue number from the content_url
+            const issueNumber = parseInt(project_card.content_url.split('/').pop(), 10);
+            if (isNaN(issueNumber)) {
+              console.log("Unable to parse the issue number. Exiting.");
+              return;
+            }
+
+            // Retrieve the parent GitHub issue details
+            const { data: parentIssue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: issueNumber
             });
+            const parentContent = (parentIssue.title || "") + "\n" + (parentIssue.body || "");
 
-      - name: Fetch and Create Child Issues Recursively
-        id: fetch_child_issues
-        run: |
-          function fetch_child_issues() {
-            local ISSUE_KEY=$1
-            local PARENT_GITHUB_ISSUE=$2
+            // Attempt to extract the JIRA key from a URL
+            // Example URL: https://shaifimran.atlassian.net/jira/software/projects/CS4067/boards/3?selectedIssue=CS4067-3
+            const jiraUrlRegex = /https:\/\/shaifimran\.atlassian\.net\/jira\/software\/projects\/CS4067\/boards\/\d+\?selectedIssue=([A-Z]+-\d+)/;
+            let jiraParentKey = null;
+            const urlMatch = parentContent.match(jiraUrlRegex);
+            if (urlMatch && urlMatch[1]) {
+              jiraParentKey = urlMatch[1];
+              console.log(`Extracted JIRA key from URL: ${jiraParentKey}`);
+            } else {
+              // Fallback: search for any JIRA key pattern (e.g. "CS4067-3")
+              const keyRegex = /[A-Z]+-\d+/;
+              const keyMatch = parentContent.match(keyRegex);
+              if (keyMatch) {
+                jiraParentKey = keyMatch[0];
+                console.log(`Extracted JIRA key from content: ${jiraParentKey}`);
+              }
+            }
 
-            CHILD_ISSUES=$(curl -s -X GET \
-              -H "Authorization: Basic $JIRA_AUTH" \
-              -H "Accept: application/json" \
-              "$JIRA_BASE_URL/rest/api/3/issue/$ISSUE_KEY?expand=subtasks" | jq '.fields.subtasks')
+            if (!jiraParentKey) {
+              console.log("No JIRA key found in the parent issue. Exiting.");
+              return;
+            }
 
-            echo "$CHILD_ISSUES" > child_issues.json
-            echo "CHILD_ISSUES=$(cat child_issues.json)" >> $GITHUB_ENV
+            // Define recursive function to process child issues
+            async function processChildIssues(jiraKey, githubParentIssueNumber, columnId) {
+              // Build JQL query to fetch child issues of the given JIRA key
+              const jql = encodeURIComponent(`parent = "${jiraKey}" OR "Epic Link" = "${jiraKey}"`);
+              const jiraBaseUrl = process.env.JIRA_BASE_URL;
+              const jiraUsername = process.env.JIRA_USERNAME;
+              const jiraToken    = process.env.JIRA_TOKEN;
+              const jiraSearchUrl = `${jiraBaseUrl}/rest/api/2/search?jql=${jql}&fields=summary`;
 
-            for ROW in $(echo "${CHILD_ISSUES}" | jq -r '.[] | @base64'); do
-              _jq() {
-                echo ${ROW} | base64 --decode | jq -r ${1}
+              let childIssues = [];
+              try {
+                const response = await axios.get(jiraSearchUrl, {
+                  auth: {
+                    username: jiraUsername,
+                    password: jiraToken
+                  }
+                });
+                childIssues = response.data.issues || [];
+              } catch (error) {
+                console.error(`Error fetching child issues for ${jiraKey}:`, error.message);
+                return;
               }
 
-              CHILD_KEY=$(_jq '.key')
-              CHILD_SUMMARY=$(_jq '.fields.summary')
-              CHILD_DESCRIPTION=$(_jq '.fields.description')
+              if (childIssues.length === 0) {
+                console.log(`No child issues found for JIRA issue ${jiraKey}.`);
+                return;
+              }
 
-              NEW_GITHUB_ISSUE=$(curl -s -X POST \
-                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                -H "Accept: application/vnd.github.v3+json" \
-                https://api.github.com/repos/${{ github.repository }}/issues \
-                -d "{\"title\": \"$CHILD_SUMMARY\", \"body\": \"$CHILD_DESCRIPTION\"}")
+              for (const child of childIssues) {
+                const childKey = child.key;  // e.g., "CS4067-4"
+                const childSummary = child.fields.summary || "(No summary)";
+                const childTitle = `[${childKey}] ${childSummary}`;
+                const childBody  = `Auto-created from JIRA issue **${childKey}**.\n` +
+                                   `**Parent GitHub Issue**: #${githubParentIssueNumber}\n` +
+                                   `**Parent JIRA Issue**: ${jiraKey}`;
 
-              NEW_GITHUB_ISSUE_NUMBER=$(echo "$NEW_GITHUB_ISSUE" | jq -r '.number')
+                // Create a new GitHub issue for the child issue
+                const { data: newIssue } = await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title: childTitle,
+                  body: childBody
+                });
+                console.log(`Created GitHub issue #${newIssue.number} for JIRA issue ${childKey}.`);
 
-              # Link child to parent issue in GitHub
-              curl -s -X POST \
-                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                -H "Accept: application/vnd.github.v3+json" \
-                https://api.github.com/repos/${{ github.repository }}/issues/$NEW_GITHUB_ISSUE_NUMBER/comments \
-                -d "{\"body\": \"Parent Issue: #$PARENT_GITHUB_ISSUE\"}"
+                // Add the new GitHub issue as a project card in the same column
+                await github.rest.projects.createCard({
+                  column_id: columnId,
+                  content_id: newIssue.id,
+                  content_type: "Issue"
+                });
+                console.log(`Added issue #${newIssue.number} to project column ${columnId}.`);
 
-              # Recursively fetch sub-child issues
-              fetch_child_issues $CHILD_KEY $NEW_GITHUB_ISSUE_NUMBER
-            done
-          }
+                // Recursively process further child issues of this child
+                await processChildIssues(childKey, newIssue.number, columnId);
+              }
+            }
 
-          fetch_child_issues "${{ github.event.issue.title }}" "${{ github.event.issue.number }}"
+            // Start processing recursively from the parent JIRA key
+            await processChildIssues(jiraParentKey, issueNumber, project_card.column_id);
+
+            console.log("Recursive child issue creation completed.");
