@@ -8,7 +8,7 @@ jira_email = os.getenv('JIRA_EMAIL')
 jira_api_token = os.getenv('JIRA_API_TOKEN')
 github_token = os.getenv('GITHUB_TOKEN')
 github_repo_name = os.getenv('GITHUB_REPOSITORY')
-github_project_id = 3
+github_project_id = os.getenv('GITHUB_PROJECT_ID')
 jira_parent_issue_id = 'CS4067-1'  # Replace with your Jira parent issue ID
 
 # Initialize Jira client
