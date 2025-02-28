@@ -1,90 +1,46 @@
 import os
-import requests
+from jira import JIRA
+from github import Github
 
-# Jira API credentials
-JIRA_BASE_URL = os.getenv("JIRA_BASE_URL")
-JIRA_EMAIL = os.getenv("JIRA_EMAIL")
-JIRA_API_TOKEN = os.getenv("JIRA_API_TOKEN")
-JIRA_PARENT_ISSUE_ID = "CS4067-1"  # Replace with actual Jira parent issue ID
+# Retrieve environment variables
+jira_server = os.getenv('JIRA_BASE_URL')
+jira_email = os.getenv('JIRA_EMAIL')
+jira_api_token = os.getenv('JIRA_API_TOKEN')
+github_token = os.getenv('GITHUB_TOKEN')
+github_repo_name = os.getenv('GITHUB_REPOSITORY')
+github_project_id = 3
+jira_parent_issue_id = 'CS4067-1'  # Replace with your Jira parent issue ID
 
-# GitHub credentials
-GITHUB_REPO = os.getenv("GITHUB_REPOSITORY")  # owner/repo
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-GITHUB_PROJECT_ID = os.getenv("GITHUB_PROJECT_ID")  # Use new GraphQL Project ID
+# Initialize Jira client
+jira_options = {'server': jira_server}
+jira = JIRA(options=jira_options, basic_auth=(jira_email, jira_api_token))
 
-# Headers for Jira and GitHub
-JIRA_HEADERS = {
-    "Accept": "application/json",
-    "Authorization": f"Basic {os.getenv('JIRA_USERNAME')}:{JIRA_API_TOKEN}"
-}
-
-GITHUB_HEADERS = {
-    "Authorization": f"Bearer {GITHUB_TOKEN}",
-    "Accept": "application/vnd.github.v3+json"
-}
-
-
-def get_jira_issue(issue_id):
-    """Fetch a Jira issue along with its child issues."""
-    url = f"{JIRA_BASE_URL}/rest/api/2/issue/{issue_id}?expand=subtasks"
-    response = requests.get(url, headers=JIRA_HEADERS)
-    return response.json() if response.status_code == 200 else None
-
+# Initialize GitHub client
+github = Github(github_token)
+repo = github.get_repo(github_repo_name)
+project = github.get_project(int(github_project_id))
 
 def create_github_issue(title):
-    """Create a new GitHub issue with only the title."""
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/issues"
-    data = {"title": title}
-    response = requests.post(url, json=data, headers=GITHUB_HEADERS)
-    if response.status_code == 201:
-        return response.json()["id"], response.json()["node_id"]
-    return None, None
+    """Create a new GitHub issue with the given title."""
+    issue = repo.create_issue(title=title)
+    return issue
 
-
-def add_issue_to_project(issue_node_id):
-    """Use GraphQL to add the GitHub issue to the GitHub Project (Beta)."""
-    url = "https://api.github.com/graphql"
-    query = """
-    mutation {
-      addProjectV2ItemById(input: {projectId: "%s", contentId: "%s"}) {
-        item {
-          id
-        }
-      }
-    }
-    """ % (GITHUB_PROJECT_ID, issue_node_id)
-
-    headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    response = requests.post(url, json={"query": query}, headers=headers)
-    return response.status_code == 200
-
+def add_issue_to_project(issue):
+    """Add the created GitHub issue to the specified GitHub project."""
+    project.add_to_columns(issue)
 
 def process_jira_issues(issue_id):
     """Recursively process Jira issues and create corresponding GitHub issues."""
-    issue = get_jira_issue(issue_id)
-    if not issue:
-        print(f"Failed to fetch Jira issue {issue_id}")
-        return
-
-    issue_key = issue["key"]
-    title = issue["fields"]["summary"]
-
-    # Format title as "[Issue Key] Title"
-    formatted_title = f"[{issue_key}] {title}"
+    issue = jira.issue(issue_id)
+    title = f'[{issue.key}] {issue.fields.summary}'
 
     # Create GitHub issue
-    github_issue_id, github_issue_node_id = create_github_issue(formatted_title)
-    if github_issue_id and github_issue_node_id:
-        add_issue_to_project(github_issue_node_id)
+    github_issue = create_github_issue(title)
+    add_issue_to_project(github_issue)
 
-    # Process all levels of child issues
-    if "fields" in issue and "subtasks" in issue["fields"]:
-        for child in issue["fields"]["subtasks"]:
-            process_jira_issues(child["key"])  # Recursively process child issues
-
+    # Process subtasks
+    for subtask in issue.fields.subtasks:
+        process_jira_issues(subtask.key)
 
 # Start processing from the main parent issue
-process_jira_issues(JIRA_PARENT_ISSUE_ID)
+process_jira_issues(jira_parent_issue_id)
