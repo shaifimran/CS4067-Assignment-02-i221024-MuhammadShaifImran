@@ -13,7 +13,7 @@ env:
   JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
   JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
   JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-  GITHUB_PROJECT_COLUMN_ID: ${{ secrets.GITHUB_PROJECT_COLUMN_ID }}
+  GITHUB_PROJECT_COLUMN_ID: ${{ secrets.PROJECT_COLUMN_ID }}
 
 jobs:
   create-child-issues:
@@ -40,7 +40,7 @@ jobs:
             const parentTitle = parentIssue.title || "";
             
             // Extract the Jira key from the title (e.g. "[CS4067-1]")
-            const keyRegex = /\[?([A-Z]+-\d+)\]?/;
+            const keyRegex = /\[?([A-Z]+\d+-\d+)\]?/;
             let jiraParentKey = null;
             const keyMatch = parentTitle.match(keyRegex);
             if (keyMatch && keyMatch[1]) {
