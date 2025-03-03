@@ -147,9 +147,17 @@ Below are the API specifications for each microservice. These endpoints serve as
     - `400 Bad Request` – Invalid booking details.
     - `402 Payment Required` – Payment failed.
 
-- **Get Booking by ID**
-  - **Endpoint:** `GET /bookings/{id}`
+- **Confirm Booking**
+  - **Endpoint:** `POST /bookings/confirm`
   - **Description:** Retrieves booking details by booking ID.
+  - **Request Body:**
+    ```json
+    {
+      "booking_id": "string",
+      "amount": "string",
+      "account_id": "integer",
+    }
+    ```
   - **Responses:**
     - `200 OK` – Returns booking details.
     - `404 Not Found` – Booking does not exist.
@@ -195,5 +203,6 @@ Below are the API specifications for each microservice. These endpoints serve as
   - **Responses:**
     - `200 OK` – Payment processed successfully.
     - `402 Payment Required` – Payment processing failed.
+---
 
 
