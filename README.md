@@ -154,7 +154,7 @@ Below are the API specifications for each microservice. These endpoints serve as
     ```json
     {
       "booking_id": "string",
-      "amount": "string",
+      "amount": "integer",
       "account_id": "integer",
     }
     ```
