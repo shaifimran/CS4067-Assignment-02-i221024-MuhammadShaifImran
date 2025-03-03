@@ -204,5 +204,43 @@ Below are the API specifications for each microservice. These endpoints serve as
     - `200 OK` – Payment processed successfully.
     - `402 Payment Required` – Payment processing failed.
 ---
+flowchart TD
+    subgraph Clients
+      A[User Browser/Client]
+    end
+
+    subgraph Services
+      US[User Service]
+      ES[Event Service]
+      BS[Booking Service]
+      PS[Payment Service]
+      NS[Notification Service]
+      MQ[RabbitMQ]
+    end
+
+    %% Client interactions
+    A -->|Login/Register/Profile| US
+    A -->|Browse Events| ES
+    A -->|Create Booking| BS
+
+    %% Microservices interactions
+    US -- "GET /events" --> ES
+    BS -- "Check Availability" --> ES
+    BS -- "POST /payments" --> PS
+    BS -- "Publish Booking Event" --> MQ
+    MQ -- "Consume Booking Event" --> NS
+
+    %% Labels for communication protocols
+    classDef rest fill:#f9f,stroke:#333,stroke-width:1px;
+    classDef async fill:#9f9,stroke:#333,stroke-width:1px;
+    
+    %% Assign classes
+    US:::rest
+    ES:::rest
+    BS:::rest
+    PS:::rest
+    MQ:::async
+    NS:::async
+
 
 
