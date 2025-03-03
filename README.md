@@ -1,37 +1,66 @@
 # Online Event Booking Platform
 
-This project is an Online Event Booking Platform developed using a microservices architecture. The platform allows users to browse events, book tickets, and receive notifications. It comprises several microservices, each responsible for specific functionalities.&#8203;:contentReference[oaicite:2]{index=2}
+This project implements an **Online Event Booking Platform** using a **microservices architecture**. It allows users to browse events, book tickets, and receive notifications. The project is divided into several microservices, each responsible for a specific part of the functionality.
+
+> **Note:** The API endpoints and service details are provided as examples based on the assignment requirements :contentReference[oaicite:1]{index=1}. Adjustments have been made to reflect the actual implementation found in this repository.
+
+---
 
 ## Table of Contents
 
-- [Microservices Overview](#microservices-overview)
-- [User Service](#user-service)
-- [Event Service](#event-service)
-- [Booking Service](#booking-service)
-- [Notification Service](#notification-service)
-- [Payment Service](#payment-service)
+- [Project Overview](#project-overview)
+- [Microservices Architecture](#microservices-architecture)
+- [API Documentation](#api-documentation)
+  - [User Service](#user-service)
+  - [Event Service](#event-service)
+  - [Booking Service](#booking-service)
+  - [Notification Service](#notification-service)
+  - [Payment Service](#payment-service)
+- [Directory Structure](#directory-structure)
 - [Getting Started](#getting-started)
 - [Contributors](#contributors)
+- [License](#license)
 
-## Microservices Overview
+---
 
-:contentReference[oaicite:3]{index=3}&#8203;:contentReference[oaicite:4]{index=4}
+## Project Overview
 
-1. **User Service**: :contentReference[oaicite:5]{index=5}&#8203;:contentReference[oaicite:6]{index=6}
-2. **Event Service**: :contentReference[oaicite:7]{index=7}&#8203;:contentReference[oaicite:8]{index=8}
-3. **Booking Service**: :contentReference[oaicite:9]{index=9}&#8203;:contentReference[oaicite:10]{index=10}
-4. **Notification Service**: :contentReference[oaicite:11]{index=11}&#8203;:contentReference[oaicite:12]{index=12}
-5. **Payment Service**: :contentReference[oaicite:13]{index=13}&#8203;:contentReference[oaicite:14]{index=14}
+The Online Event Booking Platform provides the following key functionalities:
 
-## User Service
+- **User Management:** Registration, authentication, and profile management.
+- **Event Management:** Creation and retrieval of event details and availability.
+- **Booking Management:** Booking creation, ticket reservations, and payment processing.
+- **Notification:** Sending confirmation notifications (via email/SMS) upon successful bookings.
+- **Payment Processing:** Handling payment transactions for ticket bookings.
 
-:contentReference[oaicite:15]{index=15} :contentReference[oaicite:16]{index=16}&#8203;:contentReference[oaicite:17]{index=17}
+---
+
+## Microservices Architecture
+
+This platform is built as a set of independent services communicating via REST APIs and asynchronous messaging (using RabbitMQ where applicable). The main microservices are:
+
+1. **User Service:** Manages user data and authentication.
+2. **Event Service:** Manages event listings, details, and availability.
+3. **Booking Service:** Processes ticket bookings and interacts with payment and notification systems.
+4. **Notification Service:** Sends booking confirmation notifications.
+5. **Payment Service:** Handles the processing of payments.
+
+Each microservice follows best practices in error handling, logging, and secure environment configuration as detailed in the assignment document :contentReference[oaicite:2]{index=2}.
+
+---
+
+## API Documentation
+
+Below are the API specifications for each microservice. These endpoints serve as examples; consult your actual service code for any adjustments.
+
+### User Service
+
+**Base URL:** `/users`
 
 - **Register User**
-
-  - **Endpoint**: :contentReference[oaicite:18]{index=18}&#8203;:contentReference[oaicite:19]{index=19}
-  - **Description**: :contentReference[oaicite:20]{index=20}&#8203;:contentReference[oaicite:21]{index=21}
-  - **Request Body**:
+  - **Endpoint:** `POST /users/register`
+  - **Description:** Registers a new user.
+  - **Request Body:**
     ```json
     {
       "username": "string",
@@ -39,81 +68,86 @@ This project is an Online Event Booking Platform developed using a microservices
       "password": "string"
     }
     ```
-  - **Response**:
-    - **201 Created**: User registered successfully.
-    - **400 Bad Request**: Invalid input data.
+  - **Responses:**
+    - `201 Created` – User registered successfully.
+    - `400 Bad Request` – Invalid input data.
 
 - **User Login**
-
-  - **Endpoint**: :contentReference[oaicite:22]{index=22}&#8203;:contentReference[oaicite:23]{index=23}
-  - **Description**: :contentReference[oaicite:24]{index=24}&#8203;:contentReference[oaicite:25]{index=25}
-  - **Request Body**:
+  - **Endpoint:** `POST /users/login`
+  - **Description:** Authenticates a user and returns a JWT token.
+  - **Request Body:**
     ```json
     {
       "email": "string",
       "password": "string"
     }
     ```
-  - **Response**:
-    - **200 OK**: Authentication successful.
-    - **401 Unauthorized**: Invalid credentials.
+  - **Responses:**
+    - `200 OK` – Returns a JWT token.
+    - `401 Unauthorized` – Invalid credentials.
 
 - **Get User Profile**
-
-  - **Endpoint**: :contentReference[oaicite:26]{index=26}&#8203;:contentReference[oaicite:27]{index=27}
-  - **Description**: :contentReference[oaicite:28]{index=28}&#8203;:contentReference[oaicite:29]{index=29}
-  - **Headers**:
+  - **Endpoint:** `GET /users/profile`
+  - **Description:** Retrieves the authenticated user's profile.
+  - **Headers:**
     - `Authorization: Bearer <token>`
-  - **Response**:
-    - **200 OK**: User profile data.
-    - **401 Unauthorized**: Invalid or missing token.
+  - **Responses:**
+    - `200 OK` – Returns user profile information.
+    - `401 Unauthorized` – Missing or invalid token.
 
-## Event Service
+---
 
-:contentReference[oaicite:30]{index=30} :contentReference[oaicite:31]{index=31}&#8203;:contentReference[oaicite:32]{index=32}
+### Event Service
+
+**Base URL:** `/events`
 
 - **Create Event**
-
-  - **Endpoint**: :contentReference[oaicite:33]{index=33}&#8203;:contentReference[oaicite:34]{index=34}
-  - **Description**: :contentReference[oaicite:35]{index=35}&#8203;:contentReference[oaicite:36]{index=36}
-  - **Request Body**:
+  - **Endpoint:** `POST /events`
+  - **Description:** Creates a new event.
+  - **Request Body:**
     ```json
     {
       "title": "string",
       "description": "string",
-      "date": "string",
+      "date": "YYYY-MM-DD",
       "location": "string",
       "available_tickets": "integer"
     }
     ```
-  - **Response**:
-    - **201 Created**: Event created successfully.
-    - **400 Bad Request**: Invalid input data.
+  - **Responses:**
+    - `201 Created` – Event created successfully.
+    - `400 Bad Request` – Invalid event data.
 
 - **Get All Events**
-
-  - **Endpoint**: :contentReference[oaicite:37]{index=37}&#8203;:contentReference[oaicite:38]{index=38}
-  - **Description**: :contentReference[oaicite:39]{index=39}&#8203;:contentReference[oaicite:40]{index=40}
-  - **Response**:
-    - **200 OK**: List of events.
+  - **Endpoint:** `GET /events`
+  - **Description:** Retrieves a list of all available events.
+  - **Responses:**
+    - `200 OK` – Returns an array of event objects.
 
 - **Get Event by ID**
+  - **Endpoint:** `GET /events/{id}`
+  - **Description:** Retrieves details for a specific event.
+  - **Responses:**
+    - `200 OK` – Returns event details.
+    - `404 Not Found` – Event not found.
 
-  - **Endpoint**: :contentReference[oaicite:41]{index=41}&#8203;:contentReference[oaicite:42]{index=42}
-  - **Description**: :contentReference[oaicite:43]{index=43}&#8203;:contentReference[oaicite:44]{index=44}
-  - **Response**:
-    - **200 OK**: Event details.
-    - **404 Not Found**: Event not found.
+- **Check Event Availability**
+  - **Endpoint:** `GET /events/{id}/availability`
+  - **Description:** Checks the available ticket count for a specific event.
+  - **Responses:**
+    - `200 OK` – Returns availability details.
+    - `404 Not Found` – Event not found.
 
-## Booking Service
+---
 
-:contentReference[oaicite:45]{index=45} :contentReference[oaicite:46]{index=46}&#8203;:contentReference[oaicite:47]{index=47}
+### Booking Service
+
+**Base URL:** `/bookings`
 
 - **Create Booking**
-
-  - **Endpoint**: :contentReference[oaicite:48]{index=48}&#8203;:contentReference[oaicite:49]{index=49}
-  - **Description**: :contentReference[oaicite:50]{index=50}&#8203;:contentReference[oaicite:51]{index=51}
-  - **Request Body**:
+  - **Endpoint:** `POST /bookings`
+  - **Description:** Creates a new booking for an event.
+  - **Request Body:**
     ```json
     {
       "user_id": "string",
@@ -121,30 +155,68 @@ This project is an Online Event Booking Platform developed using a microservices
       "number_of_tickets": "integer",
       "payment_details": {
         "card_number": "string",
-        "expiry_date": "string",
+        "expiry_date": "MM/YY",
         "cvv": "string"
       }
     }
     ```
-  - **Response**:
-    - **201 Created**: Booking created successfully.
-    - **400 Bad Request**: Invalid input data.
-    - **402 Payment Required**: Payment processing failed.
+  - **Responses:**
+    - `201 Created` – Booking successfully created.
+    - `400 Bad Request` – Invalid booking details.
+    - `402 Payment Required` – Payment failed.
 
 - **Get Booking by ID**
+  - **Endpoint:** `GET /bookings/{id}`
+  - **Description:** Retrieves booking details by booking ID.
+  - **Responses:**
+    - `200 OK` – Returns booking details.
+    - `404 Not Found` – Booking does not exist.
 
-  - **Endpoint**: :contentReference[oaicite:52]{index=52}&#8203;:contentReference[oaicite:53]{index=53}
-  - **Description**: :contentReference[oaicite:54]{index=54}&#8203;:contentReference[oaicite:55]{index=55}
-  - **Response**:
-    - **200 OK**: Booking details.
-    - **404 Not Found**: Booking not found.
+---
 
-## Notification Service
+### Notification Service
 
-:contentReference[oaicite:56]{index=56} :contentReference[oaicite:57]{index=57}&#8203;:contentReference[oaicite:58]{index=58}
+**Base URL:** `/notifications`
 
 - **Send Notification**
+  - **Endpoint:** `POST /notifications`
+  - **Description:** Sends a notification (email/SMS) after a booking is confirmed.
+  - **Request Body:**
+    ```json
+    {
+      "user_id": "string",
+      "booking_id": "string",
+      "message": "string"
+    }
+    ```
+  - **Responses:**
+    - `200 OK` – Notification sent successfully.
+    - `400 Bad Request` – Invalid request data.
 
-  - **Endpoint**: `POST /notifications`
-::contentReference[oaicite:59]{index=59}
- 
+---
+
+### Payment Service
+
+**Base URL:** `/payments`
+
+- **Process Payment**
+  - **Endpoint:** `POST /payments`
+  - **Description:** Processes the payment for a booking.
+  - **Request Body:**
+    ```json
+    {
+      "booking_id": "string",
+      "amount": "number",
+      "payment_method": "string"
+    }
+    ```
+  - **Responses:**
+    - `200 OK` – Payment processed successfully.
+    - `402 Payment Required` – Payment processing failed.
+
+---
+
+## Directory Structure
+
+The repository is organized as follows:
+
