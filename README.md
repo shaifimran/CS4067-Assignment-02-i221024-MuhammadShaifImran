@@ -1,6 +1,6 @@
 # Online Event Booking Platform
 
-This project is an Online Event Booking Platform developed using a microservices architecture. The platform allows users to browse events, book tickets, and receive notifications. It comprises several microservices, each responsible for specific functionalities.&#8203;:contentReference[oaicite:2]{index=2}
+This project is an Online Event Booking Platform developed using a microservices architecture. The platform allows users to browse events, book tickets, and receive notifications. It comprises several microservices, each responsible for specific functionalities.
 
 ## Table of Contents
 
