@@ -2,8 +2,6 @@
 
 This project implements an **Online Event Booking Platform** using a **microservices architecture**. It allows users to browse events, book tickets, and receive notifications. The project is divided into several microservices, each responsible for a specific part of the functionality.
 
-> **Note:** The API endpoints and service details are provided as examples based on the assignment requirements :contentReference[oaicite:1]{index=1}. Adjustments have been made to reflect the actual implementation found in this repository.
-
 ---
 
 ## Table of Contents
@@ -45,7 +43,7 @@ This platform is built as a set of independent services communicating via REST A
 4. **Notification Service:** Sends booking confirmation notifications.
 5. **Payment Service:** Handles the processing of payments.
 
-Each microservice follows best practices in error handling, logging, and secure environment configuration as detailed in the assignment document :contentReference[oaicite:2]{index=2}.
+Each microservice follows best practices in error handling, logging, and secure environment configuration.
 
 ---
 
@@ -58,13 +56,12 @@ Below are the API specifications for each microservice. These endpoints serve as
 **Base URL:** `/users`
 
 - **Register User**
-  - **Endpoint:** `POST /users/register`
+  - **Endpoint:** `POST /signup`
   - **Description:** Registers a new user.
   - **Request Body:**
     ```json
     {
       "username": "string",
-      "email": "string",
       "password": "string"
     }
     ```
@@ -73,28 +70,18 @@ Below are the API specifications for each microservice. These endpoints serve as
     - `400 Bad Request` – Invalid input data.
 
 - **User Login**
-  - **Endpoint:** `POST /users/login`
+  - **Endpoint:** `POST /login`
   - **Description:** Authenticates a user and returns a JWT token.
   - **Request Body:**
     ```json
     {
-      "email": "string",
+      "username": "string",
       "password": "string"
     }
     ```
   - **Responses:**
     - `200 OK` – Returns a JWT token.
     - `401 Unauthorized` – Invalid credentials.
-
-- **Get User Profile**
-  - **Endpoint:** `GET /users/profile`
-  - **Description:** Retrieves the authenticated user's profile.
-  - **Headers:**
-    - `Authorization: Bearer <token>`
-  - **Responses:**
-    - `200 OK` – Returns user profile information.
-    - `401 Unauthorized` – Missing or invalid token.
-
 ---
 
 ### Event Service
@@ -153,11 +140,6 @@ Below are the API specifications for each microservice. These endpoints serve as
       "user_id": "string",
       "event_id": "string",
       "number_of_tickets": "integer",
-      "payment_details": {
-        "card_number": "string",
-        "expiry_date": "MM/YY",
-        "cvv": "string"
-      }
     }
     ```
   - **Responses:**
@@ -207,16 +189,11 @@ Below are the API specifications for each microservice. These endpoints serve as
     {
       "booking_id": "string",
       "amount": "number",
-      "payment_method": "string"
+      "account_id": "number"
     }
     ```
   - **Responses:**
     - `200 OK` – Payment processed successfully.
     - `402 Payment Required` – Payment processing failed.
 
----
-
-## Directory Structure
-
-The repository is organized as follows:
 
