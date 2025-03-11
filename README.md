@@ -45,7 +45,7 @@ Each microservice follows best practices in error handling, logging, and secure 
 ---
 
 ## System Architecture Diagram
-![Alt text](system-architecture-diagram.png)
+![Alt text](i221024_i221068_ArchitectureDiagram.jpg)
 
 --- 
 
