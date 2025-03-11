@@ -8,16 +8,13 @@ This project implements an **Online Event Booking Platform** using a **microserv
 
 - [Project Overview](#project-overview)
 - [Microservices Architecture](#microservices-architecture)
+- [System Architecture Diagram](#system-architecture-diagram)
 - [API Documentation](#api-documentation)
   - [User Service](#user-service)
   - [Event Service](#event-service)
   - [Booking Service](#booking-service)
   - [Notification Service](#notification-service)
   - [Payment Service](#payment-service)
-- [Directory Structure](#directory-structure)
-- [Getting Started](#getting-started)
-- [Contributors](#contributors)
-- [License](#license)
 
 ---
 
@@ -46,6 +43,11 @@ This platform is built as a set of independent services communicating via REST A
 Each microservice follows best practices in error handling, logging, and secure environment configuration.
 
 ---
+
+## System Architecture Diagram
+![Alt text](system-architecture-diagram.png)
+
+--- 
 
 ## API Documentation
 
@@ -204,5 +206,6 @@ Below are the API specifications for each microservice. These endpoints serve as
     - `200 OK` – Payment processed successfully.
     - `402 Payment Required` – Payment processing failed.
 ---
+
 
 
