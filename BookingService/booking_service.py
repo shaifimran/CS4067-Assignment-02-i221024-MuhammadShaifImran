@@ -8,6 +8,7 @@ import jsonwebtoken as jwt
 import pika
 import os
 from dotenv import load_dotenv
+import json
 
 # Load environment variables
 load_dotenv()
@@ -149,10 +150,15 @@ def confirm_booking(
         "status": "CONFIRMED"
     }
 
+    json_message = json.dumps(message)  
+
     channel.basic_publish(
         exchange="",
         routing_key=RABBITMQ_QUEUE,
-        body=str(message)
+        body=json_message,  
+        properties=pika.BasicProperties(
+            delivery_mode=2  
+        )
     )
     connection.close()
 

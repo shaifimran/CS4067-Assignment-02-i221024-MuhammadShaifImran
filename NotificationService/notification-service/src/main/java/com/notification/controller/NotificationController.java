@@ -14,7 +14,7 @@ public class NotificationController {
 
     @PostMapping("/send")
     public String sendNotification(@RequestBody Notification notification) {
-        rabbitTemplate.convertAndSend("notification-queue", notification);
+        rabbitTemplate.convertAndSend("notifications", notification);
         return "Notification Sent!";
     }
 }
