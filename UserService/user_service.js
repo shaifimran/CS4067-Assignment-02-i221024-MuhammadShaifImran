@@ -1,3 +1,4 @@
+const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
@@ -10,6 +11,9 @@ const port = 3000;
 
 app.use(bodyParser.json());
 
+
+JWT_SECRET = process.env.JWT_SECRET;
+
 const client = new Client({
   user: process.env.DATABASE_USER,
   host: process.env.DATABASE_HOST,
@@ -17,6 +21,7 @@ const client = new Client({
   password: process.env.DATABASE_PASSWORD,
   port: process.env.DATABASE_PORT,
 });
+
 
 client.connect()
   .then(() => console.log('Connected to PostgreSQL'))
@@ -26,7 +31,7 @@ client.connect()
 const allowedUserTypes = ['customer', 'eventmanager'];
 
 // Signup Endpoint
-app.post('/signup', async (req, res) => {
+app.post('/api/users/signup', async (req, res) => {
   const { username, password, usertype } = req.body;
   
   if (!username || !password || !usertype) {
@@ -64,7 +69,7 @@ app.post('/signup', async (req, res) => {
 });
 
 // Login Endpoint
-app.post('/login', async (req, res) => {
+app.post('/api/users/login', async (req, res) => {
   const { username, password } = req.body;
   
   if (!username || !password) {
@@ -87,7 +92,7 @@ app.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user.userid, username: user.username, usertype: user.usertype },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '1h' }
     );
 

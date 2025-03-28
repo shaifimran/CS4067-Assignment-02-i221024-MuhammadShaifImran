@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service-deployment
+  namespace: onlineeventbookingmuhammadshaifimran
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: 22i1024/payment_service:latest
+          ports:
+            - containerPort: 5001
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: event-booking-secrets
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: event-booking-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: event-booking-config
+                  key: DB_NAME
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: event-booking-config
+                  key: POSTGRES_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: event-booking-config
+                  key: POSTGRES_PORT
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service-service
+  namespace: onlineeventbookingmuhammadshaifimran
+
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - protocol: TCP
+      port: 5001
+      targetPort: 5001
+  type: ClusterIP

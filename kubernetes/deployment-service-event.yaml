@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-service-deployment
+  namespace: onlineeventbookingmuhammadshaifimran
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: event-service
+  template:
+    metadata:
+      labels:
+        app: event-service
+    spec:
+      containers:
+        - name: event-service
+          image: 22i1024/event_service:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: event-booking-secrets
+                  key: MONGO_USER
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: event-booking-secrets
+                  key: MONGO_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: event-booking-config
+                  key: DB_NAME
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: event-booking-config
+                  key: MONGO_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: event-booking-config
+                  key: MONGO_PORT
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: event-booking-secrets
+                  key: JWT_SECRET
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-service-service
+  namespace: onlineeventbookingmuhammadshaifimran
+
+spec:
+  selector:
+    app: event-service
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP

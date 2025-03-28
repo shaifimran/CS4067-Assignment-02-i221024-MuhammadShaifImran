@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: onlineeventbookingmuhammadshaifimran
+spec:
+  accessModes:
+    - ReadWriteOnce  # Allows only one node to mount it at a time
+  resources:
+    requests:
+      storage: 5Gi  # Define the storage size

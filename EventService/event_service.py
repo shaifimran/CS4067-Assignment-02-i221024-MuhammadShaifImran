@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from pymongo import MongoClient
+from pymongo import MongoClient, errors
 from dotenv import load_dotenv
 import jsonwebtoken as jwt
 import os
@@ -11,16 +11,28 @@ load_dotenv()
 
 # Flask App
 app = Flask(__name__)
-
+    
 # Secret Key for JWT
 JWT_SECRET = os.getenv("JWT_SECRET")
-
+MONGO_USER = os.getenv("MONGO_USER")
+MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
+DB_PORT = os.getenv("DB_PORT")
+DB_HOST = os.getenv("DB_HOST")
 # MongoDB Setup
-MONGO_URI = os.getenv("MONGO_URI")  # Load from .env
-client = MongoClient(MONGO_URI)
+MONGO_URI = f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
+try:
+    # Attempt to create a MongoDB client and connect
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)  # 5-second timeout
+    client.server_info()  # This will trigger an error if the connection fails
+    print("MongoDB connection established successfully.")
+except errors.ServerSelectionTimeoutError as err:
+    print("MongoDB connection failed: %s" % err)
+except Exception as e:
+    print("An unexpected error occurred: %s" % e)
 
 # Change the database name to "EventBooking" (as per .env)
-db = client["EventBooking"]
+db = client["OnlineEventBookingPlatform"]
 
 # Collections
 events_collection = db["events"]
@@ -68,14 +80,14 @@ def event_manager_required(f):
     return decorated
 
 # Get all events
-@app.route('/events', methods=['GET'])
+@app.route('/api/events', methods=['GET'])
 @token_required
 def get_events():
     events = list(events_collection.find({}, {"_id": 0}))  # Exclude MongoDB ObjectId
     return jsonify(events), 200
 
 # Add a new event (Only Event Managers)
-@app.route('/events', methods=['POST'])
+@app.route('/api/events', methods=['POST'])
 @token_required
 @event_manager_required
 def create_event():
@@ -99,11 +111,18 @@ def create_event():
         "ticket_price": data["ticket_price"]
     }
 
-    events_collection.insert_one(event_data)
+    try:
+        events_collection.insert_one(event_data)
+    except errors.DuplicateKeyError:
+        print('Duplicate key error: A document with the same unique key already exists.')
+    except errors.InvalidDocument as e:
+        print(f'Invalid document error: {e}')
+    except errors.PyMongoError as e:
+        print(f'An error occurred: {e}')
     return jsonify({"message": "Event created successfully", "event_id": new_event_id}), 201
 
 # Get event by ID
-@app.route('/events/<int:event_id>', methods=['GET'])
+@app.route('/api/events/<int:event_id>', methods=['GET'])
 @token_required
 def get_event(event_id):
     event = events_collection.find_one({"event_id": event_id}, {"_id": 0})
@@ -112,7 +131,7 @@ def get_event(event_id):
     return jsonify({"error": "Event not found"}), 404
 
 # Check event availability (For Booking Service)
-@app.route('/events/<int:event_id>/availability', methods=['GET'])
+@app.route('/api/events/<int:event_id>/availability', methods=['GET'])
 def check_event_availability(event_id):
     event = events_collection.find_one({"event_id": event_id}, {"_id": 0})
     if not event:

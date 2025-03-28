@@ -80,6 +80,12 @@
             <version>5.9.2</version>
             <scope>test</scope>
         </dependency>
+        <!-- Spring Boot Starter Tomcat (for embedded server customization) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </dependency>
+
 
     </dependencies>
 
