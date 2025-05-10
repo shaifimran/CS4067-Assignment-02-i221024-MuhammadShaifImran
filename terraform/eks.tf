@@ -1,6 +1,6 @@
 module "eks" {
-  source          = "terraform-aws-modules/eks/aws"
-  version         = "~> 19.0"
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 19.0"
 
   cluster_name    = "event-booking-cluster"
   cluster_version = "1.27"
