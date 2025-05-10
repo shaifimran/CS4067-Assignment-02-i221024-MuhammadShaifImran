@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: payment-service-deployment
-  namespace: onlineeventbookingmuhammadshaifimran
+  namespace: devopsproject
 spec:
   replicas: 2
   selector:
@@ -50,7 +50,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: payment-service-service
-  namespace: onlineeventbookingmuhammadshaifimran
+  namespace: devopsproject
 
 spec:
   selector:

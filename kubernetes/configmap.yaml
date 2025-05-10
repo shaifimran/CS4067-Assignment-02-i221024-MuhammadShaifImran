@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: event-booking-config
-  namespace: onlineeventbookingmuhammadshaifimran
+  namespace: devopsproject
 data:
   DB_NAME: OnlineEventBookingPlatform
   POSTGRES_HOST: "postgres-service"
