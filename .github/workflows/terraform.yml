@@ -53,4 +53,7 @@ jobs:
 
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      run: terraform apply -auto-approve 
+      run: terraform apply -auto-approve
+      env:
+        TF_VAR_admin_role_arn: ${{ secrets.AWS_ADMIN_ROLE_ARN }}
+        TF_VAR_friend_role_arn: ${{ secrets.AWS_FRIEND_ROLE_ARN }} 
