@@ -51,6 +51,7 @@ jobs:
       - name: Upload TF Outputs
         uses: actions/upload-artifact@v4
         with:
+          name: tf-outputs              # explicitly name the artifact :contentReference[oaicite:0]{index=0}
           path: tf-outputs.json
 
   deploy:
@@ -64,7 +65,8 @@ jobs:
       - name: Download TF Outputs
         uses: actions/download-artifact@v4
         with:
-          path: .    # fetches tf-outputs.json into repo root
+          name: tf-outputs              # must match the upload name exactly :contentReference[oaicite:1]{index=1}
+          path: .                       # places tf-outputs.json in the workspace root
 
       - name: Write EC2 SSH Key
         run: |
@@ -73,7 +75,8 @@ jobs:
 
       - name: Generate Ansible Inventory
         run: |
-          # Now tf-outputs.json is in the root
+          set -e
+          # tf-outputs.json is now at the repo root
           IPS=$(jq -r '.instance_ips.value[]' tf-outputs.json)
           cat > ansible/inventory.ini <<EOF
           [app_servers]
@@ -90,7 +93,7 @@ jobs:
           sudo apt-get install -y python3-pip jq
           pip3 install ansible
 
-      - name: Install Galaxy Roles
+      - name: Install Galaxy Roles (if any)
         working-directory: ./ansible
         run: |
           if [ -f requirements.yml ]; then
