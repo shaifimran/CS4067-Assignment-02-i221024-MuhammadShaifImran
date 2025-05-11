@@ -57,6 +57,7 @@
       kubernetes.core.k8s:
         src: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
         state: present
+        namespace: argocd
 
     - name: Debug ArgoCD server if it doesn’t start cleanly
       shell: |
