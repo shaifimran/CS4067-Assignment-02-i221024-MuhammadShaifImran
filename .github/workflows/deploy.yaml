@@ -1,114 +1,80 @@
-name: Terraform → Kubernetes Deploy
+name: Terraform-Ansible-ArgoCD Deployment
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'terraform/**'
-      - 'ansible/**'
-      - '.github/workflows/deploy.yaml'
-      - 'manifests/**'
+    branches:
+      - main
 
 jobs:
   terraform:
+    name: 'Terraform Apply'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./terraform
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: 'Check out repository'
+        uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: 'Configure AWS credentials'
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          terraform_version: "1.0.0"
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ secrets.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Terraform Init & Apply
-        run: |
-          terraform init
-          terraform fmt -check
-          terraform apply -auto-approve \
-            -var="key_name=${{ secrets.EC2_KEY_NAME }}" \
-            -var="instance_type=t2.micro" \
-            -var="desired_capacity=2" \
-            -var="max_size=4" \
-            -var="min_size=1" \
-            -var="allowed_ssh_cidr=0.0.0.0/0"
+      - name: 'Set up Terraform'
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.0'
 
-      - name: Export & Clean TF Outputs
-        run: |
-          terraform output -json > tf-raw.json
-          tail -n +2 tf-raw.json > tf-outputs.json
+      - name: 'Terraform Init'
+        run: terraform init -input=false
 
-      - name: Upload TF Outputs
+      - name: 'Terraform Apply'
+        run: terraform apply -auto-approve
+
+      - name: 'Save Terraform outputs'
+        run: terraform output -json > tf-outputs.json
+
+      - name: 'Upload Terraform outputs'
         uses: actions/upload-artifact@v4
         with:
-          name: tf-outputs
+          name: terraform-outputs
           path: tf-outputs.json
+          if-no-files-found: error
+          retention-days: 7
 
   deploy:
+    name: 'Deploy via Ansible and ArgoCD'
     needs: terraform
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: 'Check out repository'
+        uses: actions/checkout@v4
 
-      - name: Download TF Outputs
+      - name: 'Configure AWS credentials'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: 'Download Terraform outputs'
         uses: actions/download-artifact@v4
         with:
-          name: tf-outputs
+          name: terraform-outputs
+          path: .
 
-      - name: Write EC2 SSH Key
+      - name: 'Parse Terraform outputs'
         run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/ec2_key.pem
-          chmod 600 /tmp/ec2_key.pem
-
-      - name: Generate Ansible Inventory
-        run: |
+          echo "Terraform outputs:"
           cat tf-outputs.json
-          IPS=$(jq -r '.instance_ips.value[]' tf-outputs.json)
-          mkdir -p ansible
-          cat > ansible/inventory.ini <<EOF
-          [app_servers]
-          $(for ip in $IPS; do
-              echo "$ip ansible_user=ec2-user ansible_ssh_private_key_file=/tmp/ec2_key.pem"
-            done)
-          EOF
-          cat ansible/inventory.ini
+          EC2_IP=$(jq -r '.ec2_public_ip.value' tf-outputs.json)
+          echo "Parsed EC2 IP: $EC2_IP"
 
-      - name: Install Ansible & jq
+      - name: 'Configure EC2 with Ansible'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip jq
-          pip3 install ansible
+          ansible-playbook -i inventory.ini playbook.yml --extra-vars "host=$EC2_IP"
 
-      - name: Install Galaxy Roles
-        working-directory: ./ansible
+      - name: 'Deploy application with ArgoCD'
         run: |
-          if [ -f requirements.yml ]; then
-            ansible-galaxy install -r requirements.yml
-          fi
-
-      - name: Run Ansible Playbooks
-        run: |
-          ansible-playbook \
-            -i ansible/inventory.ini \
-            ansible/playbooks/site.yml \
-            --forks 10 \
-            --ssh-extra-args='-o StrictHostKeyChecking=no'
-
-      - name: Sync ArgoCD App
-        run: |
-          sleep 60
-          kubectl --kubeconfig=/home/ec2-user/.kube/config \
-            apply -f manifests/argocd-app.yaml
+          argocd login ${{ secrets.ARGOCD_SERVER }} --username ${{ secrets.ARGOCD_USER }} --password ${{ secrets.ARGOCD_PASS }} --insecure
+          argocd app sync my-app
