@@ -45,8 +45,11 @@ jobs:
             -var="min_size=1" \
             -var="allowed_ssh_cidr=0.0.0.0/0"
 
-      - name: Export TF Outputs
-        run: terraform output -json > tf-outputs.json
+      - name: Export & Clean TF Outputs
+        run: |
+          terraform output -json > tf-raw.json
+          # Remove any non-JSON first line (runner echo)
+          tail -n +2 tf-raw.json > tf-outputs.json
 
       - name: Upload TF Outputs
         uses: actions/upload-artifact@v4
