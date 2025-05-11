@@ -52,11 +52,24 @@
         wait: true
         timeout: 600
 
+
     - name: Install Argo CD manifests into argocd namespace
       kubernetes.core.k8s:
         src: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
         state: present
-        namespace: argocd
+
+    - name: Debug ArgoCD server if it doesn’t start cleanly
+      shell: |
+        echo "=== Pods in argocd namespace ==="
+        kubectl get pods -n argocd -o wide
+        echo "=== Describe argocd-server pod ==="
+        POD=$(kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server -o jsonpath='{.items[0].metadata.name}')
+        kubectl describe pod $POD -n argocd
+        echo "=== Logs from argocd-server container ==="
+        kubectl logs deployment/argocd-server -n argocd
+      register: argocd_debug
+      failed_when: false
+      changed_when: false
 
     - name: Wait for Argo CD server to rollout successfully
       shell: |
