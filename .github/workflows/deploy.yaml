@@ -48,7 +48,7 @@ jobs:
       - name: Upload TF Outputs
         uses: actions/upload-artifact@672174a5bad8453f715436e010047cb8fa7680be
         with:
-          name: tf-outputs
+          name: terraform-outputs
           path: terraform/tf-outputs.json
 
   deploy:
