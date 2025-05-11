@@ -15,6 +15,10 @@
         --region {{ eks_region }}
         --name {{ eks_cluster }}
 
+    - name: Wait for all nodes to be Ready
+      shell: |
+        kubectl wait --for=condition=Ready nodes --all --timeout=300s
+
     - name: Ensure namespaces exist
       kubernetes.core.k8s:
         definition:
@@ -46,12 +50,13 @@
                 http: 32080
                 https: 32443
         wait: true
-        timeout: 600  # seconds (10 minutes)
+        timeout: 600
 
-    - name: Install Argo CD manifests
+    - name: Install Argo CD manifests into argocd namespace
       kubernetes.core.k8s:
         src: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
         state: present
+        namespace: argocd
 
     - name: Wait for Argo CD server to be ready
       kubernetes.core.k8s_info:
