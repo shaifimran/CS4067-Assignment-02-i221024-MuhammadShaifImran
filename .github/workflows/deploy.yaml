@@ -100,6 +100,9 @@ jobs:
           echo "=== Final Inventory ==="
           cat ansible/inventory.ini
 
+      - name: Debug Inventory
+        run: cat ansible/inventory.ini
+
       - name: Install Galaxy Roles
         working-directory: ./ansible
         run: |
@@ -119,5 +122,4 @@ jobs:
       - name: Sync ArgoCD App
         run: |
           sleep 60
-          kubectl --kubeconfig=/home/ec2-user/.kube/config
-            apply -f kubernetes/argocd-app.yaml
+          kubectl --kubeconfig=/home/ec2-user/.kube/config apply -f kubernetes/argocd-app.yaml
