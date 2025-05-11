@@ -79,12 +79,22 @@ jobs:
 
       - name: Generate Ansible Inventory
         run: |
-          echo "=== tf-outputs.json contents ==="
+          set -e
+
+          echo "=== Raw tf-outputs.json ==="
           cat tf-outputs.json
 
-          echo "=== Parsing IPs ==="
-          IPS=$(jq -r '.instance_ips.value[]' tf-outputs.json)
+          # Clean to only JSON object between first { and last }
+          sed -n '/{/,$p' tf-outputs.json | sed '$!b;/:/!b' > tf-clean.json
+          # (or simpler: sed -n "1,/}/p" tf-outputs.json > tf-clean.json)
 
+          echo "=== Clean tf-clean.json ==="
+          cat tf-clean.json
+
+          echo "=== Parsing IPs ==="
+          IPS=$(jq -r '.instance_ips.value[]' tf-clean.json)
+
+          echo "=== Writing ansible/inventory.ini ==="
           mkdir -p ansible
           cat > ansible/inventory.ini <<EOF
           [app_servers]
