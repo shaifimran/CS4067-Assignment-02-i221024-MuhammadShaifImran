@@ -10,7 +10,7 @@ module "eks" {
   # Allow the API server on the Internet
   cluster_endpoint_public_access = true
   # Restrict to your laptop's IP (replace with your actual public IP)
-  cluster_endpoint_public_access_cidrs = ["192.168.18.57/24"] # this is my public IP
+  cluster_endpoint_public_access_cidrs = ["192.168.18.0/24"] # this is my public IP
   # (you can leave private access on)
   cluster_endpoint_private_access = true
 
