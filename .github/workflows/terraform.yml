@@ -2,11 +2,11 @@ name: 'Terraform'
 
 on:
   push:
-    branches: [ main ]
+    branches: [ develop ]
     paths:
       - 'terraform/**'
   pull_request:
-    branches: [ main ]
+    branches: [ develop ]
     paths:
       - 'terraform/**'
 
@@ -52,8 +52,11 @@ jobs:
       if: github.event_name == 'pull_request'
 
     - name: Terraform Apply
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
       run: terraform apply -auto-approve
       env:
-        TF_VAR_admin_role_arn: ${{ secrets.AWS_ADMIN_ROLE_ARN }}
-        TF_VAR_friend_role_arn: ${{ secrets.AWS_FRIEND_ROLE_ARN }} 
+        TF_VAR_instance_type: "t2.micro"
+        TF_VAR_desired_capacity: "2"
+        TF_VAR_max_size: "4"
+        TF_VAR_min_size: "1"
+        TF_VAR_allowed_ssh_cidr: "0.0.0.0/0"  # Temporarily allow all IPs, should be restricted in production 
