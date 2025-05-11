@@ -7,7 +7,7 @@ on:
       - 'terraform/**'
       - 'ansible/**'
       - '.github/workflows/deploy.yaml'
-      - 'manifests/**'
+      - 'kubernetes/**'
 
 jobs:
   terraform:
