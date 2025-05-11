@@ -1,14 +1,14 @@
-output "cluster_name" {
-  description = "EKS cluster name"
-  value       = module.eks.cluster_name
+output "vpc_id" {
+  value       = module.vpc.vpc_id
+  description = "The ID of the VPC"
 }
 
-output "cluster_endpoint" {
-  description = "EKS API endpoint"
-  value       = module.eks.cluster_endpoint
+output "load_balancer_dns" {
+  value       = aws_lb.app_lb.dns_name
+  description = "The DNS name of the load balancer"
 }
 
-output "cluster_ca_certificate" {
-  description = "Base64-encoded CA data"
-  value       = module.eks.cluster_certificate_authority_data
+output "asg_name" {
+  value       = aws_autoscaling_group.app_asg.name
+  description = "The name of the Auto Scaling Group"
 }
