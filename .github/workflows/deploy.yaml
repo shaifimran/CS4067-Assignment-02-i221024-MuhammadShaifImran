@@ -53,7 +53,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tf-outputs
-          path: tf-outputs.json
+          path: ./tf-outputs.json
 
   deploy:
     needs: terraform
@@ -67,7 +67,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tf-outputs
-          path: .
+          path: ../terraform/
 
       - name: Write EC2 SSH Key
         run: |
