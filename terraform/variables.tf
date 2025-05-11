@@ -7,7 +7,6 @@ variable "aws_region" {
 variable "admin_role_arn" {
   description = "IAM Role ARN for cluster admin"
   type        = string
-  default     = ""
 }
 
 variable "friend_role_arn" {
