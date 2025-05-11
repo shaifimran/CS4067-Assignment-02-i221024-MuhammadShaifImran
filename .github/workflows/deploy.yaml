@@ -43,13 +43,13 @@ jobs:
             -var="allowed_ssh_cidr=0.0.0.0/0"
 
       - name: Export TF Outputs
-        run: terraform output -json > ../tf-outputs.json
+        run: terraform output -json > tf-outputs.json
 
       - name: Upload TF Outputs
         uses: actions/upload-artifact@672174a5bad8453f715436e010047cb8fa7680be
         with:
           name: tf-outputs
-          path: ../tf-outputs.json
+          path: terraform/tf-outputs.json
 
   deploy:
     needs: terraform
