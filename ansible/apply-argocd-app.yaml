@@ -1,0 +1,21 @@
+---
+- name: Create or update Argo CD Application
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    eks_cluster: event-booking-cluster
+    eks_region: us-west-2
+
+  tasks:
+    - name: Configure kubeconfig for EKS
+      command: >
+        aws eks update-kubeconfig
+          --region {{ eks_region }}
+          --name {{ eks_cluster }}
+
+    - name: Apply Argo CD Application manifest
+      kubernetes.core.k8s:
+        src: ../kubernetes/argocd-app.yaml
+        state: present
