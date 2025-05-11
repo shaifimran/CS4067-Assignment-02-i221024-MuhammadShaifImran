@@ -67,7 +67,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tf-outputs
-          path: .    # places tf-outputs.json in repo root
+          path: .
 
       - name: Write EC2 SSH Key
         run: |
@@ -76,15 +76,14 @@ jobs:
 
       - name: Generate Ansible Inventory
         run: |
-          set -e
           cat tf-outputs.json
           IPS=$(jq -r '.instance_ips.value[]' tf-outputs.json)
           mkdir -p ansible
           cat > ansible/inventory.ini <<EOF
           [app_servers]
           $(for ip in $IPS; do
-            echo "$ip ansible_user=ec2-user ansible_ssh_private_key_file=/tmp/ec2_key.pem"
-          done)
+              echo "$ip ansible_user=ec2-user ansible_ssh_private_key_file=/tmp/ec2_key.pem"
+            done)
           EOF
           cat ansible/inventory.ini
 
@@ -103,7 +102,8 @@ jobs:
 
       - name: Run Ansible Playbooks
         run: |
-          ansible-playbook -i ansible/inventory.ini \
+          ansible-playbook \
+            -i ansible/inventory.ini \
             ansible/playbooks/site.yml \
             --forks 10 \
             --ssh-extra-args='-o StrictHostKeyChecking=no'
