@@ -58,13 +58,6 @@
         state: present
         namespace: argocd
 
-    - name: Wait for Argo CD server to be ready
-      kubernetes.core.k8s_info:
-        api_version: apps/v1
-        kind: Deployment
-        namespace: argocd
-        name: argocd-server
-      register: argo
-      until: argo.resources[0].status.readyReplicas == argo.resources[0].status.replicas
-      retries: 30
-      delay: 10
+    - name: Wait for Argo CD server to rollout successfully
+      shell: |
+        kubectl rollout status deployment/argocd-server -n argocd --timeout=300s
