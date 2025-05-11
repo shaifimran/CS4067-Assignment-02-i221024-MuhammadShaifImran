@@ -6,7 +6,7 @@ on:
     paths:
       - 'terraform/**'
       - 'ansible/**'
-      - '.github/workflows/deploy.yaml'
+      - '.github/workflows/deploy.yml'
       - 'manifests/**'
 
 jobs:
@@ -44,7 +44,8 @@ jobs:
             -var="allowed_ssh_cidr=0.0.0.0/0"
 
       - name: Export TF Outputs
-        run: terraform output -json > tf-outputs.json
+        # Write outputs to the repo root so artifacts can include it
+        run: terraform output -json > $GITHUB_WORKSPACE/tf-outputs.json
 
       - name: Upload TF Outputs
         uses: actions/upload-artifact@v4
@@ -64,7 +65,6 @@ jobs:
       - name: Download Terraform Outputs
         uses: actions/download-artifact@v4
         with:
-          name: tf-outputs.json
           path: .
 
       - name: Write EC2 SSH Key
@@ -74,7 +74,7 @@ jobs:
 
       - name: Generate Ansible Inventory
         run: |
-          IPS=$(jq -r '.instance_ips.value[]' tf-outputs.json)
+          IPS=$(jq -r '.instance_ips.value[]' ../tf-outputs.json)
           cat > inventory.ini <<EOF
           [app_servers]
           $(for ip in $IPS; do
@@ -86,7 +86,7 @@ jobs:
       - name: Install Ansible
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pip
+          sudo apt-get install -y python3-pip jq
           pip3 install ansible
 
       - name: Install Galaxy Roles
