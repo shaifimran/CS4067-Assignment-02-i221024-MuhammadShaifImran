@@ -1,0 +1,70 @@
+---
+- name: Bootstrap Argo CD + NGINX Ingress Controller on EKS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    eks_cluster: event-booking-cluster
+    eks_region: us-west-2
+
+  tasks:
+    - name: Update kubeconfig for EKS
+      command: >
+        aws eks update-kubeconfig
+        --region {{ eks_region }}
+        --name {{ eks_cluster }}
+
+    - name: Ensure namespaces exist
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ item }}"
+        loop:
+          - argocd
+          - ingress-nginx
+        state: present
+
+    - name: Install Helm CLI
+      become: yes
+      apt:
+        name: helm
+        state: present
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Add ingress-nginx Helm repo
+      community.kubernetes.helm_repository:
+        name: ingress-nginx
+        repo_url: https://kubernetes.github.io/ingress-nginx
+
+    - name: Install NGINX Ingress Controller via Helm
+      community.kubernetes.helm:
+        name: nginx-ingress
+        chart_ref: ingress-nginx/ingress-nginx
+        release_namespace: ingress-nginx
+        create_namespace: false
+        values:
+          controller:
+            service:
+              type: NodePort
+              nodePorts:
+                http: 32080
+                https: 32443
+
+    - name: Install Argo CD manifests
+      kubernetes.core.k8s:
+        src: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+        state: present
+
+    - name: Wait for Argo CD server to be ready
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: argocd
+        name: argocd-server
+      register: argo
+      until: argo.resources[0].status.readyReplicas == argo.resources[0].status.replicas
+      retries: 30
+      delay: 10
