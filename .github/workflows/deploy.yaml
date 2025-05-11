@@ -2,8 +2,7 @@ name: Terraform → Kubernetes Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - 'terraform/**'
       - 'ansible/**'
@@ -19,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -45,18 +44,14 @@ jobs:
             -var="min_size=1" \
             -var="allowed_ssh_cidr=0.0.0.0/0"
 
-      - name: Export & Clean TF Outputs
-        run: |
-          terraform output -json > tf-raw.json
-          # Remove any non-JSON first line (runner echo)
-          tail -n +2 tf-raw.json > tf-outputs.json
+      - name: Export Terraform Outputs
+        run: terraform output -json > tf-outputs.json
 
       - name: Upload TF Outputs
         uses: actions/upload-artifact@v4
         with:
           name: tf-outputs
-          path: ./terraform/tf-outputs.json     # upload from terraform/
-          if-no-files-found: error              # fail early if missing
+          path: tf-outputs.json
 
   deploy:
     needs: terraform
@@ -64,13 +59,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download TF Outputs
         uses: actions/download-artifact@v4
         with:
           name: tf-outputs
-          path: .                                # drop tf-outputs.json into repo root
+          path: .
 
       - name: Write EC2 SSH Key
         run: |
@@ -82,13 +77,9 @@ jobs:
           echo "=== tf-outputs.json ==="
           cat tf-outputs.json
 
-          # Extract IPs from tf-outputs.json
+          echo "=== Parsing IPs ==="
           IPS=$(jq -r '.instance_ips.value[]' tf-outputs.json)
 
-          echo "=== Parsed IPs ==="
-          echo "$IPS"
-
-          # Write to Ansible inventory
           mkdir -p ansible
           echo "[app_servers]" > ansible/inventory.ini
           for ip in $IPS; do
