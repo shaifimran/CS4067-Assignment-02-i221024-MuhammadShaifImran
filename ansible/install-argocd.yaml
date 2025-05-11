@@ -45,6 +45,8 @@
               nodePorts:
                 http: 32080
                 https: 32443
+        wait: true
+        timeout: 600  # seconds (10 minutes)
 
     - name: Install Argo CD manifests
       kubernetes.core.k8s:
