@@ -32,6 +32,6 @@ jobs:
 
       - name: Run install-argocd.yml
         run: |
-          ansible-playbook ansible/install-argocd.yml
+          ansible-playbook ansible/install-argocd.yaml
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
