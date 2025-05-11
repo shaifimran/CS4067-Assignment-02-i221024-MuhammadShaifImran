@@ -1,4 +1,4 @@
-name: 'Setup ArgoCD via Ansible'
+name: 'Setup ArgoCD & Ingress Controller'
 
 on:
   push:
@@ -10,18 +10,34 @@ on:
 jobs:
   install-argocd:
     runs-on: ubuntu-latest
-    name: Install Argo CD
+    name: Install Argo CD & NGINX Ingress
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v3
+
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          # Install Python3 pip so we can install the Kubernetes client library
+          sudo apt install -y python3-pip
 
       - name: Install AWS CLI
         run: |
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip -q awscliv2.zip
-            sudo ./aws/install --update
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -q awscliv2.zip
+          sudo ./aws/install --update
+          rm -rf awscliv2.zip aws/
 
+      - name: Install Ansible & Python libraries
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install ansible kubernetes openshift
+          ansible-galaxy collection install kubernetes.core
+
+      - name: Install Helm CLI
+        run: |
+          sudo snap install helm --classic
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -30,12 +46,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Install Ansible Kubernetes collection
-        run: |
-            ansible-galaxy collection install community.kubernetes
-
-      - name: Run install-argocd.yml
-        run: |
-          ansible-playbook ansible/install-argocd.yaml
+      - name: Run Ansible Playbook to bootstrap ArgoCD & Ingress
+        working-directory: .
+        run: ansible-playbook ansible/install-argocd.yaml
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
