@@ -7,7 +7,7 @@ on:
       - 'terraform/**'
       - 'ansible/**'
       - '.github/workflows/deploy.yaml'
-      - 'manifests/**'
+      - 'kubernetes/**'
 
 jobs:
   terraform:
@@ -114,4 +114,4 @@ jobs:
         run: |
           sleep 60
           kubectl --kubeconfig=/home/ec2-user/.kube/config \
-            apply -f manifests/argocd-app.yaml
+            apply -f kubernetes/argocd-app.yaml
