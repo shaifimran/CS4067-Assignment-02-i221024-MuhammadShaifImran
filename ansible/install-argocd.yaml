@@ -22,12 +22,12 @@
           kind: Namespace
           metadata:
             name: "{{ item }}"
-        loop:
-          - argocd
-          - ingress-nginx
         state: present
+      loop:
+        - argocd
+        - ingress-nginx
 
-    - name: Install Helm CLI
+    - name: Install Helm CLI (Debian)
       become: yes
       apt:
         name: helm
@@ -35,12 +35,12 @@
       when: ansible_facts['os_family'] == 'Debian'
 
     - name: Add ingress-nginx Helm repo
-      community.kubernetes.helm_repository:
+      kubernetes.core.helm_repository:
         name: ingress-nginx
         repo_url: https://kubernetes.github.io/ingress-nginx
 
     - name: Install NGINX Ingress Controller via Helm
-      community.kubernetes.helm:
+      kubernetes.core.helm:
         name: nginx-ingress
         chart_ref: ingress-nginx/ingress-nginx
         release_namespace: ingress-nginx
