@@ -10,45 +10,38 @@ on:
 jobs:
   install-argocd:
     runs-on: ubuntu-latest
-    name: Install Argo CD & NGINX Ingress
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install system dependencies
+      - name: Install system deps and AWS CLI
         run: |
           sudo apt update
-          # Install Python3 pip so we can install the Kubernetes client library
-          sudo apt install -y python3-pip
-
-      - name: Install AWS CLI
-        run: |
+          sudo apt install -y python3-pip unzip curl
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -q awscliv2.zip
           sudo ./aws/install --update
           rm -rf awscliv2.zip aws/
 
-      - name: Install Ansible & Python libraries
+      - name: Install Ansible & Python libs
         run: |
-          python3 -m pip install --upgrade pip
+          pip3 install --upgrade pip
           pip3 install ansible kubernetes openshift
           ansible-galaxy collection install kubernetes.core
 
       - name: Install Helm CLI
         run: |
-          sudo snap install helm --classic
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-      - name: Configure AWS credentials
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Run Ansible Playbook to bootstrap ArgoCD & Ingress
-        working-directory: .
+      - name: Bootstrap ArgoCD and Ingress
         run: ansible-playbook ansible/install-argocd.yaml
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
