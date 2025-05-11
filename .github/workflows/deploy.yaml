@@ -87,6 +87,7 @@ jobs:
           cat ./terraform/tf-outputs.json
 
           echo "=== Parsing IPs ==="
+          # Skip the first line (non-JSON), then parse with jq
           IPS=$(tail -n +2 ./terraform/tf-outputs.json | jq -r '.instance_ips.value[]')
 
           mkdir -p ansible
