@@ -112,6 +112,7 @@ jobs:
           ansible-playbook \
             -i ansible/inventory.ini \
             ansible/playbooks/site.yaml \
+            --roles-path ansible/roles \
             --forks 10 \
             --ssh-extra-args='-o StrictHostKeyChecking=no'
 
