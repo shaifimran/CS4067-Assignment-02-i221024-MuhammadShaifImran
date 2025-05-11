@@ -5,12 +5,12 @@ on:
     branches: [ main ]
     paths:
       - 'terraform/**'
-      - '.github/workflows/terraform-deploy.yml'
+      - '.github/workflows/terraform.yaml'
   pull_request:
     branches: [ main ]
     paths:
       - 'terraform/**'
-      - '.github/workflows/terraform-deploy.yml'
+      - '.github/workflows/terraform.yaml'
 
 jobs:
   terraform:
@@ -71,43 +71,4 @@ jobs:
         with:
           name: tf-outputs
           path: tf-outputs.json
-
-  deploy:
-    name: 'Ansible Deploy'
-    needs: terraform
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Download TF Outputs
-        uses: actions/download-artifact@v3
-        with:
-          name: tf-outputs
-          path: .
-
-      - name: Generate Ansible Inventory
-        # Parses tf-outputs.json to a basic inventory file.
-        run: |
-          jq -r '.instance_ips.value[]' tf-outputs.json > hosts.list
-          cat > inventory.ini <<EOF
-          [app_servers]
-          $(sed 's/^/    /' hosts.list | tr '\n' '\n')
-          EOF
-          echo "Inventory:"
-          cat inventory.ini
-
-      - name: Start ssh-agent and add key
-        uses: webfactory/ssh-agent@v0.5.4
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
-
-      - name: Run Ansible Playbook
-        run: |
-          ansible-galaxy install -r requirements.yml   # if you have roles
-          ansible-playbook -i inventory.ini \
-            playbooks/site.yml \
-            --user ec2-user \       # or ubuntu, depending on your AMI
-            --ssh-common-args='-o StrictHostKeyChecking=no'
 
