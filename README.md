@@ -206,6 +206,9 @@ Below are the API specifications for each microservice. These endpoints serve as
     - `200 OK` – Payment processed successfully.
     - `402 Payment Required` – Payment processing failed.
 ---
+# Commands to setup ingress: 
+  - helm install nginx-ingress ingress-nginx/ingress-nginx   --namespace ingress-nginx   --create-namespace   --set controller.service.type=NodePort   --set controller.service.nodePorts.http=32080   --set controller.service.nodePorts.https=32443     
 
+  - kubectl port-forward -n ingress-nginx service/nginx-ingress-ingress-nginx-controller 8080:80
 
 

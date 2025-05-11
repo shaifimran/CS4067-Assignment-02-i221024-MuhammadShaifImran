@@ -8,4 +8,4 @@ spec:
     - ReadWriteOnce  # Allows only one node to mount it at a time
   resources:
     requests:
-      storage: 5Gi  # Define the storage size
+      storage: 1Gi  # Define the storage size

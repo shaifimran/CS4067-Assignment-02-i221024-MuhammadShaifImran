@@ -1,14 +1,26 @@
-output "vpc_id" {
-  value       = module.vpc.vpc_id
-  description = "The ID of the VPC"
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0"
+
+  name               = "event-booking-vpc"
+  cidr               = "10.0.0.0/16"
+  azs                = ["${var.aws_region}a", "${var.aws_region}b"]
+  public_subnets     = ["10.0.1.0/24", "10.0.2.0/24"]
+  private_subnets    = ["10.0.3.0/24", "10.0.4.0/24"]
+  enable_nat_gateway = true
+  single_nat_gateway = true
+
+  public_subnet_tags = {
+    "Name" = "event-booking-public"
+  }
+
+  private_subnet_tags = {
+    "Name" = "event-booking-private"
+  }
+
+  tags = {
+    Environment = "production"
+    Project     = "event-booking"
+  }
 }
 
-output "load_balancer_dns" {
-  value       = aws_lb.app_lb.dns_name
-  description = "The DNS name of the load balancer"
-}
-
-output "asg_name" {
-  value       = aws_autoscaling_group.app_asg.name
-  description = "The name of the Auto Scaling Group"
-}
