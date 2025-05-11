@@ -44,6 +44,11 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
+    - name: Import existing resources
+      run: |
+        terraform import 'module.eks.module.kms.aws_kms_alias.this["cluster"]' 'alias/eks/event-booking-cluster'
+        terraform import 'module.eks.aws_cloudwatch_log_group.this[0]' '/aws/eks/event-booking-cluster/cluster'
+
     - name: Terraform Format
       run: terraform fmt -check
 
