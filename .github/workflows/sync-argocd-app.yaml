@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'kubernetes/**'
-      - '.github/workflows/sync-argocd-app.yaml'
+      - '.github/workflows/sync-argocd-app.yml'
 
 jobs:
   sync-argocd:
@@ -16,15 +16,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install system deps and AWS CLI
+      - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y python3-pip unzip curl
+
+      - name: Install AWS CLI v2
+        run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -q awscliv2.zip
           sudo ./aws/install --update
           rm -rf awscliv2.zip aws/
 
+      - name: Install Ansible & Kubernetes Python libs
+        run: |
+          pip3 install --upgrade pip
+          pip3 install ansible kubernetes openshift
+          ansible-galaxy collection install kubernetes.core
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -33,8 +41,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Run apply-argocd-app.yaml
-        run: |
-          ansible-playbook ansible/apply-argocd-app.yaml
+      - name: Run apply-argocd-app playbook
+        run: ansible-playbook ansible/apply-argocd-app.yaml
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
