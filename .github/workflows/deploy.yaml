@@ -46,9 +46,7 @@ jobs:
 
       - name: Export & Clean TF Outputs
         run: |
-          # Capture raw JSON (sometimes prepended with runner echo)
           terraform output -json > tf-raw.json
-          # Strip first line in case it's not JSON
           tail -n +2 tf-raw.json > tf-outputs.json
 
       - name: Upload TF Outputs
@@ -69,7 +67,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tf-outputs
-          path: .    # Puts tf-outputs.json in the workspace root
+          path: .    # places tf-outputs.json in repo root
 
       - name: Write EC2 SSH Key
         run: |
@@ -79,20 +77,14 @@ jobs:
       - name: Generate Ansible Inventory
         run: |
           set -e
-          echo "=== tf-outputs.json ==="
           cat tf-outputs.json
-
-          echo "=== Parsing IPs ==="
-          # Use the correct JSON path into `.value`
           IPS=$(jq -r '.instance_ips.value[]' tf-outputs.json)
-
-          echo "=== Writing ansible/inventory.ini ==="
           mkdir -p ansible
           cat > ansible/inventory.ini <<EOF
           [app_servers]
           $(for ip in $IPS; do
-              echo "$ip ansible_user=ec2-user ansible_ssh_private_key_file=/tmp/ec2_key.pem"
-            done)
+            echo "$ip ansible_user=ec2-user ansible_ssh_private_key_file=/tmp/ec2_key.pem"
+          done)
           EOF
           cat ansible/inventory.ini
 
@@ -102,7 +94,7 @@ jobs:
           sudo apt-get install -y python3-pip jq
           pip3 install ansible
 
-      - name: Install Galaxy Roles (if any)
+      - name: Install Galaxy Roles
         working-directory: ./ansible
         run: |
           if [ -f requirements.yml ]; then
@@ -111,8 +103,7 @@ jobs:
 
       - name: Run Ansible Playbooks
         run: |
-          ansible-playbook \
-            -i ansible/inventory.ini \
+          ansible-playbook -i ansible/inventory.ini \
             ansible/playbooks/site.yml \
             --forks 10 \
             --ssh-extra-args='-o StrictHostKeyChecking=no'
