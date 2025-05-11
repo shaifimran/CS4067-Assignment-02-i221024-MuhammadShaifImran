@@ -33,8 +33,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Run apply-argocd-app.yml
+      - name: Run apply-argocd-app.yaml
         run: |
-          ansible-playbook ansible/apply-argocd-app.yml
+          ansible-playbook ansible/apply-argocd-app.yaml
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
