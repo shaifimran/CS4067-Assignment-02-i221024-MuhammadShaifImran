@@ -108,11 +108,11 @@ jobs:
           fi
 
       - name: Run Ansible Playbooks
+        working-directory: ./ansible
         run: |
           ansible-playbook \
-            -i ansible/inventory.ini \
-            ansible/playbooks/site.yaml \
-            --roles-path ansible/roles \
+            -i ../ansible/inventory.ini \
+            playbooks/site.yaml \
             --forks 10 \
             --ssh-extra-args='-o StrictHostKeyChecking=no'
 
