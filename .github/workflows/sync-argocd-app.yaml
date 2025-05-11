@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'kubernetes/**'
-      - '.github/workflows/sync-argocd-app.yml'
+      - '.github/workflows/sync-argocd-app.yaml'
 
 jobs:
   sync-argocd:
