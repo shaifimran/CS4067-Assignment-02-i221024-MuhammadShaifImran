@@ -1,3 +1,4 @@
+# data source to discover all EC2s tagged Name=event-booking-app
 data "aws_instances" "app" {
   filter {
     name   = "tag:Name"
@@ -5,10 +6,14 @@ data "aws_instances" "app" {
   }
 }
 
+# Public IPs of all instances in your ASG
 output "instance_ips" {
-  value = data.aws_instances.app.instances[*].public_ip_address
+  description = "Public IPs of the app servers"
+  value       = data.aws_instances.app.public_ips
 }
 
+# IDs of all instances in your ASG
 output "instance_ids" {
-  value = aws_autoscaling_group.app.instances[*].id
+  description = "IDs of the app servers"
+  value       = data.aws_instances.app.ids
 }
