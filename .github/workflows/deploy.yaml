@@ -51,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tf-outputs
-          path: tf-outputs.json
+          path: ./terraform/tf-outputs.json
 
   deploy:
     needs: terraform
@@ -65,7 +65,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tf-outputs
-          path: .
+          path: ./terraform
 
       - name: Write EC2 SSH Key
         run: |
@@ -75,10 +75,10 @@ jobs:
       - name: Generate Ansible Inventory
         run: |
           echo "=== tf-outputs.json ==="
-          cat tf-outputs.json
+          cat ./terraform/tf-outputs.json
 
           echo "=== Parsing IPs ==="
-          IPS=$(jq -r '.instance_ips.value[]' tf-outputs.json)
+          IPS=$(jq -r '.instance_ips.value[]' ./terraform/tf-outputs.json)
 
           mkdir -p ansible
           echo "[app_servers]" > ansible/inventory.ini
