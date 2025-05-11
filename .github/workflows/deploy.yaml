@@ -47,6 +47,9 @@ jobs:
       - name: Export Terraform Outputs
         run: terraform output -json > tf-outputs.json
 
+      - name: Debug TF Outputs
+        run: cat tf-outputs.json
+
       - name: Upload TF Outputs
         uses: actions/upload-artifact@v4
         with:
@@ -84,7 +87,7 @@ jobs:
           cat ./terraform/tf-outputs.json
 
           echo "=== Parsing IPs ==="
-          IPS=$(jq -r '.instance_ips.value[]' ./terraform/tf-outputs.json)
+          IPS=$(tail -n +2 ./terraform/tf-outputs.json | jq -r '.instance_ips.value[]')
 
           mkdir -p ansible
           echo "[app_servers]" > ansible/inventory.ini
@@ -113,5 +116,5 @@ jobs:
       - name: Sync ArgoCD App
         run: |
           sleep 60
-          kubectl --kubeconfig=/home/ec2-user/.kube/config \
+          kubectl --kubeconfig=/home/ec2-user/.kube/config
             apply -f kubernetes/argocd-app.yaml
