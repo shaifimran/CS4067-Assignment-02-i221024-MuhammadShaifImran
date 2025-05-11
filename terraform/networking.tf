@@ -1,6 +1,7 @@
 module "vpc" {
-  source             = "terraform-aws-modules/vpc/aws"
-  version            = "~> 5.0"
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "~> 5.0"
+
   name               = "event-booking-vpc"
   cidr               = "10.0.0.0/16"
   azs                = ["${var.aws_region}a", "${var.aws_region}b"]
