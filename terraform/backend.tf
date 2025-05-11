@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket = "devops-project-fast2025-bucket "
+    bucket = "devops-project-fast2025-bucket"
     key    = "event-booking/terraform.tfstate"
     region = "us-east-1"
   }
