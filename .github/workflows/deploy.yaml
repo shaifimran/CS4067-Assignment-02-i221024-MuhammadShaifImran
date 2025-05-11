@@ -67,7 +67,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tf-outputs
-          path: ../terraform/
+          path: ./
 
       - name: Write EC2 SSH Key
         run: |
