@@ -111,7 +111,7 @@ jobs:
         run: |
           ansible-playbook \
             -i ansible/inventory.ini \
-            ansible/playbooks/site.yml \
+            ansible/playbooks/site.yaml \
             --forks 10 \
             --ssh-extra-args='-o StrictHostKeyChecking=no'
 
