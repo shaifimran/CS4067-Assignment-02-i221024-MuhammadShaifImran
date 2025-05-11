@@ -11,8 +11,30 @@ spec:
     path: kubernetes
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: devopsproject
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: event-booking-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/shaifimran/CS4067-Assignment-02-i221024-MuhammadShaifImran'
+    targetRevision: main
+    path: kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: devopsproject
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

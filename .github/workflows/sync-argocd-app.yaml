@@ -45,3 +45,9 @@ jobs:
         run: ansible-playbook ansible/apply-argocd-app.yaml
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
+    
+      - name: Verify deployment in devopsproject namespace
+        run: |
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name event-booking-cluster
+          kubectl get all,ingress -n devopsproject
+
