@@ -77,7 +77,7 @@ terraform apply
 
 4. Configure kubectl:
 ```bash
-aws eks update-kubeconfig --name event-booking-cluster --region us-east-1
+aws eks update-kubeconfig --name event-booking-cluster --region us-west-2
 ```
 
 ## Important Notes
