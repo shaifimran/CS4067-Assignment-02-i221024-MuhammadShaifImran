@@ -23,3 +23,4 @@ module "vpc" {
     Project     = "event-booking"
   }
 }
+
