@@ -119,6 +119,15 @@ jobs:
             --forks 10 \
             --ssh-extra-args='-o StrictHostKeyChecking=no'
 
+      - name: Apply ArgoCD App via Ansible
+        working-directory: ./ansible
+        run: |
+          ansible-playbook \
+            -i ../ansible/inventory.ini \
+            apply-argocd-app.yaml \
+            --forks 1 \
+            --ssh-extra-args='-o StrictHostKeyChecking=no'
+
       - name: Sync ArgoCD App
         run: |
           sleep 60
