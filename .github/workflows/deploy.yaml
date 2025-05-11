@@ -48,6 +48,7 @@ jobs:
       - name: Upload TF Outputs
         uses: actions/upload-artifact@v4
         with:
+          name: tf-outputs
           path: terraform/tf-outputs.json
 
   deploy:
@@ -60,10 +61,10 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Download Terraform Outputs
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: tf-outputs
-          path: .
+          path: terraform/tf-outputs.json
 
       - name: Write EC2 SSH Key
         run: |
