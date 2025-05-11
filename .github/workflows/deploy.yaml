@@ -87,8 +87,9 @@ jobs:
           cat ./terraform/tf-outputs.json
 
           echo "=== Parsing IPs ==="
-          # Skip the first line (non-JSON), then parse with jq
-          IPS=$(tail -n +2 ./terraform/tf-outputs.json | jq -r '.instance_ips.value[]')
+          # Extract only the JSON part from the file
+          awk '/^{/,/^}/' ./terraform/tf-outputs.json > clean-tf-outputs.json
+          IPS=$(jq -r '.instance_ips.value[]' clean-tf-outputs.json)
 
           mkdir -p ansible
           echo "[app_servers]" > ansible/inventory.ini
