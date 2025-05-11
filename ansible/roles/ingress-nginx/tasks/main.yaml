@@ -1,0 +1,14 @@
+- name: Add Helm repo for NGINX Ingress
+  shell: |
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm repo update
+  args:
+    creates: /home/ec2-user/.cache/helm/repository/ingress-nginx-index.yaml
+
+- name: Install NGINX Ingress Controller
+  shell: |
+    helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+      --namespace ingress-nginx --create-namespace \
+      --set controller.publishService.enabled=true
+  args:
+    warn: false

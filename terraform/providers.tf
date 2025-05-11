@@ -5,6 +5,11 @@ terraform {
       version = "~> 5.80"
     }
   }
+  backend "s3" {
+    bucket = "devops-project-fast2025-bucket"
+    key    = "event-booking/terraform.tfstate"
+    region = "us-east-1"
+  }
 }
 
 provider "aws" {

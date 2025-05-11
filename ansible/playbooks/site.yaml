@@ -1,0 +1,9 @@
+- hosts: kubernetes
+  become: true
+  vars:
+    k3s_version:    "v1.27.0+k3s1"
+    argocd_version: "v2.7.7"
+  roles:
+    - k3s
+    - argocd
+    - ingress-nginx
