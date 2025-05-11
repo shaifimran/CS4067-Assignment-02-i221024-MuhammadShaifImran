@@ -79,31 +79,23 @@ jobs:
 
       - name: Generate Ansible Inventory
         run: |
-          set -e
-
-          echo "=== Raw tf-outputs.json ==="
+          echo "=== tf-outputs.json ==="
           cat tf-outputs.json
 
-          # Clean to only JSON object between first { and last }
-          sed -n '/{/,$p' tf-outputs.json | sed '$!b;/:/!b' > tf-clean.json
-          # (or simpler: sed -n "1,/}/p" tf-outputs.json > tf-clean.json)
+          # Extract IPs from tf-outputs.json
+          IPS=$(jq -r '.instance_ips.value[]' tf-outputs.json)
 
-          echo "=== Clean tf-clean.json ==="
-          cat tf-clean.json
+          echo "=== Parsed IPs ==="
+          echo "$IPS"
 
-          echo "=== Parsing IPs ==="
-          IPS=$(jq -r '.instance_ips.value[]' tf-clean.json)
-
-          echo "=== Writing ansible/inventory.ini ==="
+          # Write to Ansible inventory
           mkdir -p ansible
-          cat > ansible/inventory.ini <<EOF
-          [app_servers]
-          $(for ip in $IPS; do
-              echo "$ip ansible_user=ec2-user ansible_ssh_private_key_file=/tmp/ec2_key.pem"
-            done)
-          EOF
+          echo "[app_servers]" > ansible/inventory.ini
+          for ip in $IPS; do
+            echo "$ip ansible_user=ec2-user ansible_ssh_private_key_file=/tmp/ec2_key.pem" >> ansible/inventory.ini
+          done
 
-          echo "=== inventory.ini ==="
+          echo "=== Final Inventory ==="
           cat ansible/inventory.ini
 
       - name: Install Ansible & jq
