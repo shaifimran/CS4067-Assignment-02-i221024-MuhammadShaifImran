@@ -20,6 +20,6 @@ module "vpc" {
 
   tags = {
     Environment = "production"
-    Project     = "event-booking"
+    Project     = "event-booking-app"
   }
 }
