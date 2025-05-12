@@ -6,13 +6,29 @@
 
 - name: Install k3s
   shell: sh /tmp/install_k3s.sh
-  args:
-    creates: /usr/local/bin/k3s
 
 - name: Wait for k3s kubeconfig to exist
   wait_for:
     path: /etc/rancher/k3s/k3s.yaml
     timeout: 60
+
+- name: List k3s directory for debug
+  shell: ls -l /etc/rancher/k3s || ls -l /etc/rancher || ls -l /etc
+  register: k3s_dir_listing
+  ignore_errors: true
+
+- name: Show k3s directory listing
+  debug:
+    var: k3s_dir_listing.stdout_lines
+
+- name: Check k3s service status
+  shell: systemctl status k3s || journalctl -u k3s
+  register: k3s_status
+  ignore_errors: true
+
+- name: Show k3s service status
+  debug:
+    var: k3s_status.stdout_lines
 
 - name: Link kubeconfig for ec2-user
   file:
