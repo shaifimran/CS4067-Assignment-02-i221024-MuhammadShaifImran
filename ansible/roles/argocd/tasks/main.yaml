@@ -4,6 +4,10 @@
     dest: /usr/local/bin/argocd
     mode: 0755
 
+- name: Wait for cluster to stabilize
+  pause:
+    seconds: 20
+    
 - name: Deploy ArgoCD manifests
   become: true
   become_user: ubuntu

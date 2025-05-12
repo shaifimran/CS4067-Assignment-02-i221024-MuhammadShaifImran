@@ -116,7 +116,7 @@ jobs:
           ansible-playbook \
             -i ../ansible/inventory.ini \
             playbooks/site.yaml \
-            --forks 10 \
+            --forks 1 \
             --ssh-extra-args='-o StrictHostKeyChecking=no'
 
       - name: Apply ArgoCD App via Ansible
