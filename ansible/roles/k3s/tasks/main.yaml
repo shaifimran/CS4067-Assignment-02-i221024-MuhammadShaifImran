@@ -4,10 +4,10 @@
     dest: /tmp/install_k3s.sh
     mode: 0755
 
-- name: Install k3s
-  shell: K3S_VERSION={{ k3s_version }} sh /tmp/install_k3s.sh
-  args:
-    creates: /usr/local/bin/k3s
+- name: Wait for k3s kubeconfig to exist
+  wait_for:
+    path: /etc/rancher/k3s/k3s.yaml
+    timeout: 60
 
 - name: Link kubeconfig for ec2-user
   file:
