@@ -31,4 +31,5 @@ variable "allowed_ssh_cidr" {
 variable "key_name" {
   type        = string
   description = "EC2 key pair name"
+  default     = "event-booking-key"
 }
